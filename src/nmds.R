@@ -5,12 +5,13 @@ library(tidyverse)
 library(gridExtra)
 library(ggrepel)
 
+#Read in data on the samples 
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+
 ## Bacteria ######
 
 #Read in cleaned data
 bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
-samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
-
 
 # Choose to work at the family level
 fam_abun = bac_abundance %>% 
@@ -60,6 +61,21 @@ sample_scores = scores(nmds_fit)$sites %>%
   ))) %>%
   mutate(trt_coarse = fct_relevel(trt_coarse, "NoFum", "RecentlyFum", "FumMonthsAgo"))
 
+#Plot samples
+samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
+  geom_point(aes(color = trt_coarse)) +
+  scale_color_brewer(name = "Sample Status", 
+                     palette = "Dark2", 
+                     labels = c("Not\nfumigated", "Recently\nfumigated", "Fumigated\nmonths ago")) +
+  ggtitle("Samples") +
+  theme_bw() +
+  theme(legend.position = "bottom", 
+        plot.title = element_text(hjust=0.5)) 
+
+samples_plot +
+  geom_text_repel(aes(label = samp_number))
+
+##Get NMDS scores for species
 #Use (expanded) weighted averages as given as species scores
 species_scores <- scores(nmds_fit)$species %>%
   as_tibble(rownames = "species") %>%
@@ -81,24 +97,12 @@ species_scores2$cluster = factor(kmeans_fit2$cluster) %>%
   fct_relevel("Cluster1", "Cluster2", "Cluster3")
 
 
-#Create plots of NMDS results
+##Plot species NMDS results
+#Helper plotting layer
 gglayer_theme <- list(
   theme_bw(),
   scale_color_brewer(palette="Dark2")
 )
-
-samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
-  geom_point(aes(color = trt_coarse)) +
-  scale_color_brewer(name = "Sample Status", 
-                     palette = "Dark2", 
-                     labels = c("Not\nfumigated", "Recently\nfumigated", "Fumigated\nmonths ago")) +
-  ggtitle("Samples") +
-  theme_bw() +
-  theme(legend.position = "bottom", 
-        plot.title = element_text(hjust=0.5)) 
-
-samples_plot +
-  geom_text_repel(aes(label = samp_number))
 
 species_plot = ggplot(species_scores2, aes(NMDS1, NMDS2)) +
   geom_point(aes(color = cluster)) +
@@ -107,13 +111,13 @@ species_plot = ggplot(species_scores2, aes(NMDS1, NMDS2)) +
   ggtitle("OTUs") +
   theme(legend.position = "bottom", 
         plot.title = element_text(hjust=0.5)) 
-  
 
 species_plot
-  
+
+#Put two plots next to each other
 grid.arrange(samples_plot, species_plot, ncol=2)
 
-
+#Save data frames
 saveRDS(sample_scores, here("data", "clean", "sample_scores_bac.RDS"))
 saveRDS(species_scores, here("data", "clean", "species_scores_bac.RDS"))
 saveRDS(species_scores2, here("data", "clean", "species_scores2_bac.RDS"))
@@ -170,6 +174,7 @@ sample_scores = scores(nmds_fit)$sites %>%
   ))) %>%
   mutate(trt_coarse = fct_relevel(trt_coarse, "NoFum", "RecentlyFum", "FumMonthsAgo"))
 
+#Plot samples
 samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
   geom_point(aes(color = trt_coarse, shape = Time)) +
   scale_color_brewer(name = "Sample Status", 
@@ -183,6 +188,60 @@ samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
 
 samples_plot #+
   #geom_text_repel(aes(label = samp_number))
+
+##Get NMDS scores for species
+#Use (expanded) weighted averages as given as species scores
+species_scores <- scores(nmds_fit)$species %>%
+  as_tibble(rownames = "species") %>%
+  mutate(species = str_remove(species, "g__")) %>%
+  mutate(abrev = abbreviate(species, minlength = 5))
+
+#Alternatively, use weighted averages as given by wascores
+species_scores2 = wascores(scores(nmds_fit)$sites, counts_filt, expand = TRUE) %>%
+  as_tibble(rownames = "species") %>%
+  mutate(species = str_remove(species, "g__")) %>%
+  mutate(abrev = abbreviate(species, minlength = 5))
+
+#K-means cluster species scores 
+set.seed(0)
+kmeans_fit1 <- kmeans(select(species_scores, NMDS1, NMDS2), centers = 3)
+kmeans_fit2 <- kmeans(select(species_scores2, NMDS1, NMDS2), centers = 3)
+species_scores$cluster = factor(kmeans_fit1$cluster) 
+species_scores2$cluster = factor(kmeans_fit2$cluster) %>%
+  fct_recode(Cluster3 = "3", Cluster2 = "1", Cluster1 = "2") %>%
+  fct_relevel("Cluster1", "Cluster2", "Cluster3")
+
+
+##Plot species NMDS results
+#Helper plotting layer
+gglayer_theme <- list(
+  theme_bw(),
+  scale_color_brewer(palette="Dark2")
+)
+
+species_plot = ggplot(species_scores2, aes(NMDS1, NMDS2)) +
+  geom_point(aes(color = cluster)) +
+  geom_text_repel(aes(label = abrev), cex = 2.5, max.overlaps = 20) +
+  gglayer_theme +
+  ggtitle("OTUs") +
+  theme(legend.position = "bottom", 
+        plot.title = element_text(hjust=0.5)) 
+
+species_plot
+
+#Put two plots next to each other
+grid.arrange(samples_plot, species_plot, ncol=2)
+
+#Save data frames 
+saveRDS(sample_scores, here("data", "clean", "sample_scores_fung.RDS"))
+saveRDS(species_scores, here("data", "clean", "species_scores_fung.RDS"))
+saveRDS(species_scores2, here("data", "clean", "species_scores2_fung.RDS"))
+
+
+
+
+
+
 
 
 
