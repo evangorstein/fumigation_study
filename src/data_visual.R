@@ -51,9 +51,9 @@ grid.text("Family OTUs", x=-0.07, rot=90, gp=gpar(fontsize=16))
 fam_abun_subset = as.matrix(final_fam[rowSums(final_fam)>25000,])
 fam_subset_norm <- apply(fam_abun_subset, 2, library_sum)
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
-plt3 = pheatmap(fam_subset_norm, show_colnames = FALSE,  main = "SUbset where Each Sample with more than 25000")
+plt2 = pheatmap(fam_subset_norm, show_colnames = FALSE,  main = "Subset where Each Sample with more than 25000")
 setHook("grid.newpage", NULL, "replace")
-grid.text("Samples 1-250", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Samples 1-240", y=-0.07, gp=gpar(fontsize=16))
 grid.text("Family OTUs", x=-0.07, rot=90, gp=gpar(fontsize=16))
 
 
@@ -97,33 +97,40 @@ non_fumigated = rowSums(final_fam[,samp_never_fumigated])
 recent_fumigated = rowSums(final_fam[,samp_recently])
 more_than_a_month_fumigated = rowSums(final_fam[,more_than_a_month])
 
+## construct the matrix
 group_fam = cbind(final_fam, non_fumigated)
 group_fam = cbind(group_fam, recent_fumigated)
 group_fam = cbind(group_fam, more_than_a_month_fumigated)
-group_fam = group_fam[,c("non_fumigated", "recent_fumigated", "more_than_a_month_fumigated")]
+group_fam = group_fam[,c("non_fumigated","recent_fumigated", "more_than_a_month_fumigated")]
 
+#plot 3
 group_fam_normalize = group_fam[rowSums(group_fam)>0,]
 group_fam_normalize <- apply(group_fam_normalize, 2, library_sum)
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
-plt3 = pheatmap(group_fam_normalize, show_rownames = FALSE, main = "SUbset where Each Sample with more than 25000")
+plt3 = pheatmap(group_fam_normalize, show_rownames = FALSE, main = "OTU Based on Fumigation Status", angle_col = 0, cluster_cols =  FALSE)
 setHook("grid.newpage", NULL, "replace")
-grid.text("Samples 1-250", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Fumigation Status", y=-0.07, gp=gpar(fontsize=16))
 grid.text("Family OTUs", x=-0.07, rot=90, gp=gpar(fontsize=16))
 
 ## plot4 - look at OTUs presented the most
 group_fam_normalize2 = group_fam[rowSums(group_fam)>20000,]
 group_fam_normalize2 <- apply(group_fam_normalize2, 2, library_sum)
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
-plt4 = pheatmap(group_fam_normalize2, show_rownames = TRUE, main = "SUbset where Each Sample with more than 25000")
+plt4 = pheatmap(group_fam_normalize2, show_rownames = TRUE, main = "OTU Based on Fumigation Status", angle_col = 0, cluster_cols =  FALSE)
 setHook("grid.newpage", NULL, "replace")
-grid.text("Samples 1-250", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Fumigation Status", y=-0.07, gp=gpar(fontsize=16))
 grid.text("Family OTUs", x=-0.07, rot=90, gp=gpar(fontsize=16))
 
 ##5 - look at OTUs with big difference
 group_fam_normalize2 = group_fam[rowSums(group_fam)>40000,]
 group_fam_normalize2 <- apply(group_fam_normalize2, 2, library_sum)
 setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
-plt5 = pheatmap(group_fam_normalize2, show_rownames = TRUE, main = "SUbset where Each Sample with more than 25000")
+plt5 = pheatmap(group_fam_normalize2, show_rownames = TRUE, main = "OTU Based on Fumigation Status", angle_col = 0, cluster_cols=FALSE)
 setHook("grid.newpage", NULL, "replace")
-grid.text("Samples 1-250", y=-0.07, gp=gpar(fontsize=16))
+grid.text("Fumigation Status", y=-0.07, gp=gpar(fontsize=16))
 grid.text("Family OTUs", x=-0.07, rot=90, gp=gpar(fontsize=16))
+
+## clustering map- 6 and 7, on different sizes.
+all_samps = colnames(final_fam)
+samp_annotation = tibble(all_samps) %>% 
+  mutate()

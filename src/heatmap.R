@@ -128,7 +128,7 @@ save_pheatmap_pdf <- function(x, filename, width=7, height=7) {
 BiocManager::install("DESeq")
 library("DESeq")
 example_file <- system.file ("./../TagSeqExample.tab")
-data <- read.delim("TagSeqExample.tab", header=T, row.names="gene")
+data <- read.delim("../TagSeqExample.tab", header=T, row.names="gene")
 data_subset <- as.matrix(data[rowSums(data)>50000,])
 pheatmap(data_subset)
 
