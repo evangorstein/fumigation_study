@@ -203,10 +203,10 @@ plt8 = create_heatmap(fam_abun_subset2,
 
 
 
-## Visualize from different OTU (probably order)
+## Visualize from order OTU
 
 order_abun = bac_abundance %>% 
-  mutate(Order = fct_explicit_na(Family, "Missing")) %>%
+  mutate(Order = fct_explicit_na(Order, "Missing")) %>%
   group_by(Order) %>%
   summarise(across(starts_with("Samp"), sum)) 
 ord = order_abun$Order
@@ -228,7 +228,7 @@ ord_nomissing = apply(final_ord, 2, library_sum)
 # first, create the annotation for groups
 all_samps = colnames(final_ord)
 
-##TODO: check to see if this is a valid way, maybe improve it.
+
 samp_annotation = data.frame(all_samps) %>% 
   mutate(group = case_when(
     all_samps %in% samp_more ~ "more_than_a_month_fumigated",
@@ -247,6 +247,7 @@ plt9 = create_heatmap(ord_nomissing,
                       ylabel = "Order OTUs"
 )
 
+# Plot 10, only look at OTUs that have over 40000 abundance across samples.
 ord_abun_subset2 = as.matrix(final_ord[rowSums(final_ord)>40000,])
 ord_abun_subset2 = apply(ord_abun_subset2, 2, library_sum)
 
@@ -255,5 +256,5 @@ plt10 = create_heatmap(ord_abun_subset2,
                       rowname= TRUE,
                       title = "Normalized Number of OTUs in each sample",
                       xlabel = "Samples 1-240",
-                      ylabel = "Family OTUs"
+                      ylabel = "Order OTUs"
 )

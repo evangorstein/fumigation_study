@@ -97,7 +97,6 @@ samp_more = c(sapply(more_than_a_month, make_sample))
 
 all_samps = colnames(final_data)
 
-##TODO: check to see if this is a valid way, maybe improve it.
 samp_annotation = data.frame(all_samps) %>% 
   mutate(group = case_when(
     all_samps %in% samp_more ~ "more_than_a_month_fumigated",
@@ -107,7 +106,7 @@ samp_annotation = data.frame(all_samps) %>%
   select(-all_samps)
 
 row.names(samp_annotation) = colnames(norm_data)
-plt6 = create_heatmap(norm_data,
+plt3 = create_heatmap(norm_data,
                       annotation = samp_annotation,
                       title = "Normalized Number of OTUs in each sample",
                       xlabel = "Samples 1-240",
@@ -116,7 +115,7 @@ plt6 = create_heatmap(norm_data,
 
 
 ## filtering for graph7
-plt7 = create_heatmap(data_subset_norm,
+plt4 = create_heatmap(data_subset_norm,
                       annotation = samp_annotation,
                       rowname = TRUE,
                       title = "Normalized Number of OTUs in each sample",
@@ -124,9 +123,9 @@ plt7 = create_heatmap(data_subset_norm,
                       ylabel = "Genus OTUs"
 )
 
-data_subset2 = as.matrix(final_data[rowSums(final_data)>10000,])
+data_subset2 = as.matrix(final_data[rowSums(final_data)>5000,])
 data_subset2 = apply(data_subset2, 2, library_sum)
-plt8 = create_heatmap(data_subset2,
+plt5 = create_heatmap(data_subset2,
                       annotation = samp_annotation,
                       rowname= TRUE,
                       title = "Normalized Number of OTUs in each sample",
