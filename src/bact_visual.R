@@ -15,7 +15,7 @@ fam.df = bac_abundance %>%
   mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
   group_by(Family) %>%
   summarise(across(starts_with("Samp"), sum)) 
-#Note that the "Missing" value aggregates the counts for all the OTUs whose families are unknown
+#Note that the "Unknown_Family" value aggregates the counts for all the OTUs whose families are unknown
 
 
 #Convert to matrix with family label as rownames 
@@ -31,18 +31,19 @@ fam_mask = rowSums(fam.mat) >= 1000
 fam.filt = fam.mat[fam_mask,]
 #153 out of 296 families remain
 
-#Filter to only look at families which appear in at least 230 out of 240 samples
+#Filter to only look at families that have at least 10,000 counts in total (summing over samples) 
 fam_mask_harsh = rowSums(fam.mat) >= 10000
 fam.filt.harsh = fam.mat[fam_mask_harsh,]
 #74 out of 296 families remain
 
 
-#Filter to only look at samples in which at least 50 of the remaining 152 families show up
+##Filter to only look at samples in which at least 50 of the remaining 153 families show up
 #samp_mask = colSums(fam.filt > 0) >= 50
 #fam.filt = fam.filt[,samp_mask]
 #Gets rid of a single sample (sample 173)
 
-#Normalize by dividing by library sizes
+
+##Normalize by dividing by library sizes
 #fam.ls = t( t(fam.filt) / colSums(fam.filt) )
 #fam.ls.harsh = t( t(fam.filt.harsh) / colSums(fam.filt.harsh) )
 #Get rid of missing family 

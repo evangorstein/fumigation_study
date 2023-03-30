@@ -1,73 +1,74 @@
+# Creating heatmaps of bacterial data
+# reference: https://davetang.org/muse/2018/05/15/making-a-heatmap-in-r-with-the-pheatmap-package/
 library(pheatmap)
 library(tidyverse)
-library(dplyr)
 library(here)
-library(grid)
-Sys.setlocale("LC_ALL","English") #tianyi
 
-#Read in cleaned data
+#### Load and prepare data ####
+
+# Read in data
 fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
 samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
 
-
-genus_fung_abun = fung_abundance %>% 
-  mutate(Genus = fct_explicit_na(Genus, "Missing")) %>%
+#Aggregate to genus level
+genus.df = fung_abundance %>% 
+  mutate(Genus = fct_explicit_na(Genus, "Unknown")) %>%
   group_by(Genus) %>%
   summarise(across(starts_with("Samp"), sum)) 
 
-genus = genus_fung_abun$Genus
+#Note that the "Unknown" value aggregates the counts for all the OTUs whose families are unknown
+genuses = genus.df$Genus
+genus.mat = as.matrix(genus.df[,-1])
+rownames(genus.mat) = genuses
 
-count_data_no_missing = t(genus_fung_abun[genus!="Missing",-1])
-colnames(count_data_no_missing) = genus[-length(genus)]
+#Check most abundant genuses, which includes "Unknown"
+sort(rowSums(genus.mat))
 
-## Filter to only look at taxa appearing in at least 50 samples
-taxa_filt = colSums(count_data_no_missing > 0) >= 150
-counts_filt = count_data_no_missing[, taxa_filt]
+#Filter to only look at genuses that have at least 100 counts in total (summing over samples) 
+genus_mask = rowSums(genus.mat) >= 100
+genus.filt = genus.mat[genus_mask,]
+#151 out of 409 genuses remain
 
-# final data ready to use
-final_data = t(as.matrix(count_data_no_missing))
+#Filter to only look at genuses that have at least 1,000 counts in total (summing over samples) 
+genus_mask_harsh = rowSums(genus.mat) >= 1000
+genus.filt.harsh = genus.mat[genus_mask_harsh,]
+#69 out of 409 families remain
 
-# function to transform data into library sum
-library_sum = function(x){
-  x / sum(x)
-}
-# function to make a heatmap.
-# argument: df(matrix): data, annotation(matrix): annotation for colname, colname, rowname(boolean): 
-# show column\row name or not. ylabel, xlabel,title(String): specify labels and titles.
-create_heatmap = function(df, annotation = NULL, 
-                          colname = FALSE, 
-                          rowname = FALSE, 
-                          xlabel = NULL, 
-                          ylabel = NULL, 
-                          title = NULL, 
-                          clustercol = TRUE){
-  setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
-  heatmap = pheatmap(df, annotation_col = annotation, 
-                     show_colnames = colname, 
-                     show_rownames = rowname, 
-                     main = title, angle_col = 0, 
-                     cluster_cols = clustercol)
-  setHook("grid.newpage", NULL, "replace")
-  grid.text(xlabel, y=-0.07, gp=gpar(fontsize=16))
-  grid.text(ylabel, x=-0.07, rot=90, gp=gpar(fontsize=16))
-  return (heatmap)
-}
+##Filter to only look at samples in which at least 21 of the remaining 409 genuses show up
+samp_mask = colSums(genus.mat > 0) >= 21
+genus.mat = genus.mat[,samp_mask]
+#Gets rid of 8 samples!
 
-norm_data = apply(final_data, 2, library_sum)
+##Filter to only look at samples in which at least 21 of the remaining 151 genuses show up
+samp_mask = colSums(genus.filt > 0) >= 21
+genus.filt = genus.filt[,samp_mask]
+#Gets rid of 10 samples!
 
-plt1 = create_heatmap(norm_data, 
-                      title = "Normalized Number of OTUs in each sample", 
-                      xlabel = "Samples 1-240", 
-                      ylabel = "Genus OTUs")
+##Filter to only look at samples in which at least 21 of the remaining 69 genuses show up
+samp_mask = colSums(genus.filt.harsh > 0) >= 21
+genus.filt.harsh = genus.filt.harsh[,samp_mask]
+#Gets rid of 17 samples!
 
-data_subset = as.matrix(final_data[rowSums(final_data)>25000,])
-data_subset_norm = apply(data_subset, 2, library_sum)
-plt2 = create_heatmap(data_subset_norm, 
-                      title = "Subset where Each Sample with more than 25000", 
-                      xlabel = "Samples 1-240", 
-                      ylabel = "Genus OTUs")
 
-## find the sample number corresponding to each category
+#Normalize with log ratio using Unknown_Family as reference
+#In order to do this and avoid negative infinite values, have to get rid of 0's by adding pseudo counts
+genus.smooth = genus.mat + 0.5
+genus.filt.smooth = genus.filt + 0.5
+genus.filt.harsh.smooth = genus.filt.harsh + 0.5
+
+genus.lr = t( log(t(genus.smooth) / genus.smooth["Unknown",]) )
+genus.lr.filt = t( log(t(genus.filt.smooth) / genus.filt.smooth["Unknown",]) )
+genus.lr.harsh = t( log(t(genus.filt.harsh.smooth) / genus.filt.harsh.smooth["Unknown",]) )
+
+#Now that we've normalized, safe to get rid of unknown genus
+genus.lr = genus.lr[rownames(genus.lr)!="Unknown",]
+genus.lr.filt = genus.lr.filt[rownames(genus.lr.filt)!="Unknown",]
+genus.lr.harsh = genus.lr.harsh[rownames(genus.lr.harsh)!="Unknown",]
+
+
+### Adding column annotation to heat map based on sample groups ########
+
+#This code can be re-written in more simple/readable way but works for now
 never_fumigated = samp_metadata %>% 
   filter(Time == "Day_0" | Treatment == "Non-fumigated chipping grass") %>% 
   pull(samp_number)
@@ -91,44 +92,70 @@ make_sample = function(x){
   }
 }
 
+#Create column names based on column numbers
 samp_never_fumigated = c(sapply(never_fumigated, make_sample))
 samp_recently = c(sapply(recently, make_sample))
 samp_more = c(sapply(more_than_a_month, make_sample))
 
-all_samps = colnames(final_data)
+all_samps = colnames(genus.df)[-1]
 
-samp_annotation = data.frame(all_samps) %>% 
-  mutate(group = case_when(
-    all_samps %in% samp_more ~ "more_than_a_month_fumigated",
-    all_samps %in% samp_never_fumigated ~ "non_fumigated",
-    all_samps %in% samp_recently ~ "recent_fumigated"
-  )) %>% 
-  select(-all_samps)
+#Create dataframe for annotation
+samp_annotation = data.frame(`fumigation status` = factor(case_when(
+    all_samps %in% samp_never_fumigated ~ "never",
+    all_samps %in% samp_recently ~ "recent",
+    all_samps %in% samp_more ~ "past"
+  ))) %>%
+  mutate(Time = samp_metadata$Time)
+row.names(samp_annotation) = all_samps
 
-row.names(samp_annotation) = colnames(norm_data)
-plt3 = create_heatmap(norm_data,
+# function to make a heatmap.
+# argument: df(matrix): data, annotation(matrix): annotation for colname, colname, rowname(boolean): 
+# show column\row name or not. ylabel, xlabel,title(String): specify labels and titles.
+create_heatmap = function(df, annotation = NULL, 
+                          colname = FALSE, 
+                          rowname = FALSE, 
+                          xlabel = NULL, 
+                          ylabel = NULL, 
+                          title = NULL, 
+                          clustercol = TRUE){
+  setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
+  heatmap = pheatmap(df, annotation_col = annotation, 
+                     show_colnames = colname, 
+                     show_rownames = rowname, 
+                     main = title, angle_col = 0, 
+                     cluster_cols = clustercol, 
+                     fontsize_row = 3)
+  setHook("grid.newpage", NULL, "replace")
+  grid.text(xlabel, y=-0.07, gp=gpar(fontsize=16))
+  grid.text(ylabel, x=-0.07, rot=90, gp=gpar(fontsize=16))
+  return (heatmap)
+}
+
+
+plt1 = create_heatmap(genus.lr,
                       annotation = samp_annotation,
-                      title = "Normalized Number of OTUs in each sample",
-                      xlabel = "Samples 1-240",
-                      ylabel = "Genus OTUs"
+                      rowname = FALSE, 
+                      title = "Log ratio normalized abundances", 
+                      xlabel = "232 Samples", 
+                      ylabel = "408 fungal genuses"
+)
+
+plt1.filt = create_heatmap(genus.lr.filt,
+                           annotation = samp_annotation,
+                           title = "Log ratio normalized abundances", 
+                           xlabel = "230 Samples", 
+                           ylabel = "150 most abundant fungal genuses"
 )
 
 
-## filtering for graph7
-plt4 = create_heatmap(data_subset_norm,
-                      annotation = samp_annotation,
-                      rowname = TRUE,
-                      title = "Normalized Number of OTUs in each sample",
-                      xlabel = "Samples 1-240",
-                      ylabel = "Genus OTUs"
+plt1.harsh = create_heatmap(genus.lr.harsh,
+                            annotation = samp_annotation,
+                            title = "Log ratio normalized abundances", 
+                            xlabel = "223 samples", 
+                            ylabel = "68 most abundant fungal family"
 )
 
-data_subset2 = as.matrix(final_data[rowSums(final_data)>5000,])
-data_subset2 = apply(data_subset2, 2, library_sum)
-plt5 = create_heatmap(data_subset2,
-                      annotation = samp_annotation,
-                      rowname= TRUE,
-                      title = "Normalized Number of OTUs in each sample",
-                      xlabel = "Samples 1-240",
-                      ylabel = "Genus OTUs"
-)
+
+
+
+
