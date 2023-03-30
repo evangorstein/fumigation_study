@@ -15,24 +15,23 @@ bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
 
 # Choose to work at the family level
 fam_abun = bac_abundance %>% 
-  mutate(Family = fct_explicit_na(Family, "Missing")) %>%
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
   group_by(Family) %>%
   summarise(across(starts_with("Samp"), sum)) 
 
 fam = fam_abun$Family
 
-count_data_no_missing = t(fam_abun[fam!="Missing",-1])
+count_data_no_missing = t(fam_abun[fam!="Unknown_Family",-1])
 colnames(count_data_no_missing) = fam[-length(fam)]
 
 
 ## Filter to only look at taxa appearing in at least 160 samples
 taxa_filt = colSums(count_data_no_missing > 0) >= 160 
 counts_filt = count_data_no_missing[,taxa_filt]
+#Left with 150 of 295 families
 
-#Filter to only look at samples in which at least 50 of the remaining taxa show up
-samp_filt = rowSums(counts_filt > 0) >= 50 
-counts_filt = counts_filt[samp_filt,]
-#Gets rid of one sample
+#Get rid of sample 173, which has much fewer counts than all the other samples and which screws up the NMDS 
+counts_filt = counts_filt[-173,]
 
 
 #Run nmds
@@ -41,7 +40,7 @@ nmds_fit <- metaMDS(counts_filt)
 
 #Check nmds diagnostics
 stressplot(nmds_fit) #Shepard diagram
-dimcheckMDS(counts_filt) #Stress plot, 
+L = dimcheckMDS(counts_filt) #Stress plot, 
 #may take a minute or two to run as it fits NMDS for several different k
 
 
@@ -54,26 +53,28 @@ sample_scores = scores(nmds_fit)$sites %>%
     Time == "Day_0" ~ "Control",
     Treatment == "Non-fumigated chipping grass" ~ "Control",
     TRUE ~ "Fumigated"))) %>%
-  mutate(trt_coarse = factor(case_when(
-    trt_bin == "Control" ~ "NoFum",
-    trt_bin == "Fumigated" & Time == "Day_10" ~ "RecentlyFum",
-    TRUE ~ "FumMonthsAgo"
-  ))) %>%
-  mutate(trt_coarse = fct_relevel(trt_coarse, "NoFum", "RecentlyFum", "FumMonthsAgo"))
+  mutate(`fumigation status` = factor(case_when(
+    trt_bin == "Control" ~ "Never",
+    trt_bin == "Fumigated" & Time == "Day_10" ~ "Recent",
+    TRUE ~ "Past"
+  ), levels = c("Never", "Past", "Recent")))
+
+
+
+color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
+
 
 #Plot samples
 samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
-  geom_point(aes(color = trt_coarse)) +
-  scale_color_brewer(name = "Sample Status", 
-                     palette = "Dark2", 
-                     labels = c("Not\nfumigated", "Recently\nfumigated", "Fumigated\nmonths ago")) +
+  geom_point(aes(color = `fumigation status`, shape = Treatment)) +
+  #scale_color_brewer(palette = "Dark2") +
+  scale_color_manual(values = color_coding) +
   ggtitle("Samples") +
   theme_bw() +
-  theme(legend.position = "bottom", 
-        plot.title = element_text(hjust=0.5)) 
+  theme(plot.title = element_text(hjust=0.5)) +
+  ggtitle("NMDS with stress 0.08")
 
-samples_plot +
-  geom_text_repel(aes(label = samp_number))
+samples_plot 
 
 ##Get NMDS scores for species
 #Use (expanded) weighted averages as given as species scores
@@ -109,8 +110,7 @@ species_plot = ggplot(species_scores2, aes(NMDS1, NMDS2)) +
   geom_text_repel(aes(label = abrev), cex = 2.5, max.overlaps = 20) +
   gglayer_theme +
   ggtitle("OTUs") +
-  theme(legend.position = "bottom", 
-        plot.title = element_text(hjust=0.5)) 
+  theme(plot.title = element_text(hjust=0.5)) 
 
 species_plot
 
