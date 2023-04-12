@@ -65,13 +65,13 @@ color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
 
 #Plot samples
 samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
-  geom_point(aes(color = `fumigation status`, shape = Treatment)) +
+  geom_point(aes(color = `fumigation status`, shape = Time)) +
   #scale_color_brewer(palette = "Dark2") +
   scale_color_manual(values = color_coding) +
   ggtitle("Samples") +
   theme_bw() +
   theme(plot.title = element_text(hjust=0.5)) +
-  ggtitle("NMDS with stress 0.074")
+  ggtitle(glue("NMDS with stress {round(L[2], 2)}"))
 
 samples_plot 
 

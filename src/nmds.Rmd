@@ -1,0 +1,177 @@
+---
+title: "nmds"
+author: "Evan Gorstein"
+date: "2023-04-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(here)
+library(tidyverse)
+library(vegan)
+library(goeveg) #For scree plot
+library(gridExtra)
+library(ggrepel)
+library(glue)
+```
+
+# Read in sample data
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+```
+
+
+## Bacteria
+Read in ASV abundance data (which includes phylogenetic information as extra columns)
+```{r}
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+
+Count matrix:
+```{r}
+ASVs <- bac_abundance$sequence
+
+counts <- bac_abundance %>% 
+  select(starts_with("Samp"))
+
+counts <- t(counts)
+colnames(counts) <- ASVs
+
+#Print library sizes
+rowSums(counts)
+#Get rid of samples 173 and 217, which have the smallest library sizes
+counts = counts[-c(173,217),]
+```
+Run nmds
+```{r}
+
+set.seed(0)
+nmds_asv <- metaMDS(counts)
+```
+Check diagnostics
+```{r}
+
+stressplot(nmds_asv) #Shepard diagram
+nmds_asv$stress
+```
+Plot results
+```{r}
+#Get sample scores in nice data frame with sample meta data merged
+sample_scores = scores(nmds_asv)$sites %>%
+  as_tibble(rownames = "samp_number") %>%
+  mutate(samp_number = as.numeric(str_replace(samp_number, "Samp", ""))) %>%
+  inner_join(samp_metadata) %>%
+  mutate(trt_bin = factor(case_when(
+    Time == "Day_0" ~ "Control",
+    Treatment == "Non-fumigated chipping grass" ~ "Control",
+    TRUE ~ "Fumigated"))) %>%
+  mutate(`fumigation status` = factor(case_when(
+    trt_bin == "Control" ~ "Never",
+    trt_bin == "Fumigated" & Time == "Day_10" ~ "Recent",
+    TRUE ~ "Past"
+  ), levels = c("Never", "Past", "Recent")))
+
+
+
+color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
+
+
+#Plot samples
+samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
+  geom_point(aes(color = `fumigation status`, shape = Time)) +
+  #scale_color_brewer(palette = "Dark2") +
+  scale_color_manual(values = color_coding) +
+  ggtitle("Samples") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust=0.5)) +
+  geom_text_repel(aes(label = samp_number)) +
+  ggtitle(glue("NMDS with stress {round(nmds_asv$stress, 2)}"))
+
+ggsave(here("plots", "bacteria_nmds.pdf"), samples_plot)
+samples_plot 
+```
+
+## Fungus 
+Read in ASV abundance data (which includes phylogenetic information as extra columns)
+```{r}
+fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
+```
+
+Count matrix:
+```{r}
+fung_asvs <- fung_abundance$sequence
+
+fung_counts <- fung_abundance %>% 
+  select(starts_with("Samp"))
+
+fung_counts <- t(fung_counts)
+colnames(fung_counts) <- fung_asvs
+
+#Print library sizes
+rowSums(fung_counts)
+#Get rid of samples 6, 20, and 235 which have the smallest library sizes
+fung_counts = fung_counts[-c(6,20, 235),]
+```
+Run nmds
+```{r}
+
+set.seed(0)
+fung_nmds_asv <- metaMDS(fung_counts)
+```
+
+Check diagnostics
+```{r}
+
+stressplot(fung_nmds_asv) #Shepard diagram
+fung_nmds_asv$stress
+```
+
+Plot results
+```{r}
+#Get sample scores in nice data frame with sample meta data merged
+fung_sample_scores = scores(fung_nmds_asv)$sites %>%
+  as_tibble(rownames = "samp_number") %>%
+  mutate(samp_number = as.numeric(str_replace(samp_number, "Samp", ""))) %>%
+  inner_join(samp_metadata) %>%
+  mutate(trt_bin = factor(case_when(
+    Time == "Day_0" ~ "Control",
+    Treatment == "Non-fumigated chipping grass" ~ "Control",
+    TRUE ~ "Fumigated"))) %>%
+  mutate(`fumigation status` = factor(case_when(
+    trt_bin == "Control" ~ "Never",
+    trt_bin == "Fumigated" & Time == "Day_10" ~ "Recent",
+    TRUE ~ "Past"
+  ), levels = c("Never", "Past", "Recent")))
+
+
+
+color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
+
+
+#Plot samples
+fung_samples_plot = ggplot(fung_sample_scores, aes(NMDS1, NMDS2)) +
+  geom_point(aes(color = `fumigation status`, shape = Time)) +
+  #scale_color_brewer(palette = "Dark2") +
+  scale_color_manual(values = color_coding) +
+  ggtitle("Samples") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust=0.5)) +
+  geom_text_repel(aes(label = samp_number)) +
+  ggtitle(glue("NMDS with stress {round(fung_nmds_asv$stress, 2)}"))
+
+ggsave(here("plots", "fungal_nmds.pdf"), fung_samples_plot)
+fung_samples_plot 
+```
+
+
+
+
+
+
+
+

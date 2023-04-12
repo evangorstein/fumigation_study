@@ -1,30 +1,55 @@
-# Creating heatmaps of fungal data
-# reference: https://davetang.org/muse/2018/05/15/making-a-heatmap-in-r-with-the-pheatmap-package/
+---
+title: "Fungus heatmaps"
+author: "Evan Gorstein"
+date: "2023-04-12"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Reference: https://davetang.org/muse/2018/05/15/making-a-heatmap-in-r-with-the-pheatmap-package/
+```{r}
 library(pheatmap)
 library(grid)
 library(tidyverse)
 library(here)
+```
 
-#### Load and prepare data ####
 
-# Read in data
+## Load data 
+
+First we read in the data
+```{r}
 fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
 samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+```
 
-#Aggregate to genus level
+## Aggregate to higher taxonomic level
+We aggregate the counts to the genus level. Note that the "Unknown" value aggregates the counts for all the OTUs whose genus are unknown
+```{r}
 genus.df = fung_abundance %>% 
-  mutate(Genus = fct_explicit_na(Genus, "Unknown")) %>%
+  mutate(Genus = fct_na_value_to_level(Genus, "Unknown")) %>%
   group_by(Genus) %>%
   summarise(across(starts_with("Samp"), sum)) 
 
-#Note that the "Unknown" value aggregates the counts for all the OTUs whose families are unknown
+#Convert to matrix with genus label as rowname
 genuses = genus.df$Genus
 genus.mat = as.matrix(genus.df[,-1])
 rownames(genus.mat) = genuses
+```
 
-#Check most abundant genuses, which includes "Unknown"
-sort(rowSums(genus.mat))
+Let's check what most abundant genuses are (including "Unknown")
+```{r}
+sort(rowSums(genus.mat), dec = T) %>% head(10)
+```
 
+## Filter data
+Now we do some filtering.
+
+First we filter out rare genuses. We apply three different thresholds so that we can see three different versions of the heatmap
+```{r}
 #Filter to only look at genuses that have at least 100 counts in total (summing over samples) 
 genus_mask = rowSums(genus.mat) >= 100
 genus.filt = genus.mat[genus_mask,]
@@ -34,7 +59,11 @@ genus.filt = genus.mat[genus_mask,]
 genus_mask_harsh = rowSums(genus.mat) >= 1000
 genus.filt.harsh = genus.mat[genus_mask_harsh,]
 #69 out of 409 families remain
+```
 
+
+Now we filter to get rid of samples that have very few of the remaining genuses
+```{r}
 ##Filter to only look at samples in which at least 21 of the remaining 409 genuses show up
 samp_mask = colSums(genus.mat > 0) >= 21
 genus.mat = genus.mat[,samp_mask]
@@ -49,10 +78,12 @@ genus.filt = genus.filt[,samp_mask]
 samp_mask = colSums(genus.filt.harsh > 0) >= 21
 genus.filt.harsh = genus.filt.harsh[,samp_mask]
 #Gets rid of 17 samples!
+```
 
 
-#Normalize with log ratio using Unknown_Family as reference
-#In order to do this and avoid negative infinite values, have to get rid of 0's by adding pseudo counts
+## Normalize data
+Now we normalize with log ratio using count of "Unknown" genus as the reference (the denominator in the ratio). In order to do this and avoid negative infinite values, have to get rid of 0's by adding pseudo count of 0.5
+```{r}
 genus.smooth = genus.mat + 0.5
 genus.filt.smooth = genus.filt + 0.5
 genus.filt.harsh.smooth = genus.filt.harsh + 0.5
@@ -65,9 +96,13 @@ genus.lr.harsh = t( log(t(genus.filt.harsh.smooth) / genus.filt.harsh.smooth["Un
 genus.lr = genus.lr[rownames(genus.lr)!="Unknown",]
 genus.lr.filt = genus.lr.filt[rownames(genus.lr.filt)!="Unknown",]
 genus.lr.harsh = genus.lr.harsh[rownames(genus.lr.harsh)!="Unknown",]
+```
 
-#Create dataframe for annotating heat map with fumigation-status sample metadata
-#This code can probably be re-written in more simple/readable way but works for now
+
+## Create dataframe for annotating heat map with fumigation-status and week sample metadata
+
+This code can probably be re-written in more simple/readable way but works for now
+```{r}
 never_fumigated = samp_metadata %>% 
   filter(Time == "Day_0" | Treatment == "Non-fumigated chipping grass") %>% 
   pull(samp_number)
@@ -106,7 +141,12 @@ samp_annotation = data.frame(`fumigation status` = factor(case_when(
   ))) %>%
   mutate(Time = samp_metadata$Time)
 row.names(samp_annotation) = all_samps
+```
 
+
+## Create heatmaps
+
+```{r}
 # function to make a heatmap.
 # argument: df(matrix): data, annotation(matrix): annotation for colname, colname, rowname(boolean): 
 # show column\row name or not. ylabel, xlabel,title(String): specify labels and titles.
@@ -130,7 +170,7 @@ create_heatmap = function(df, annotation = NULL,
   return (heatmap)
 }
 
-
+pdf(here("plots", "fungal_heatmap1.pdf"))
 plt1 = create_heatmap(genus.lr,
                       annotation = samp_annotation,
                       rowname = FALSE, 
@@ -138,23 +178,24 @@ plt1 = create_heatmap(genus.lr,
                       xlabel = "232 Samples", 
                       ylabel = "408 fungal genuses"
 )
+dev.off()
 
+pdf(here("plots", "fungal_heatmap2.pdf"))
 plt1.filt = create_heatmap(genus.lr.filt,
                            annotation = samp_annotation,
                            title = "Log ratio normalized abundances", 
                            xlabel = "230 Samples", 
                            ylabel = "150 most abundant fungal genuses"
 )
+dev.off()
 
-
+pdf(here("plots", "fungal_heatmap3.pdf"))
 plt1.harsh = create_heatmap(genus.lr.harsh,
                             annotation = samp_annotation,
                             title = "Log ratio normalized abundances", 
                             xlabel = "223 samples", 
-                            ylabel = "68 most abundant fungal family"
+                            ylabel = "68 most abundant fungal genuses"
 )
+dev.off()
 
-
-
-
-
+```
