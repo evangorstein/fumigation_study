@@ -1,0 +1,80 @@
+---
+title: "Permanova Analysis on Microbiome Dataset"
+author: "Tianyi Xu"
+date: "2023-04-08"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(vegan)
+library(ggplot2)
+library(tidyverse)
+library(here)
+library(forcats)
+```
+
+
+## Background
+
+In the previous stage, we have done some data visualization on the abundance of microbiol OTUs in the dataset from soil of the golf court. 
+
+Based on the visualization, it was showing that the relevant abundance was different among samples within 3 groups - those who were never fumigated, those who were fumigated recently, and those who were fumigated more than a month ago. In additions, the samples were also consisted of samples with different treatment.
+
+It appears there are more difference among relative abundances of microbes between their fumigation status.
+
+Now, we will use PERMANOVA statistical inference to see if there's statistical evidence that the sample's abundance were different from each other.
+
+## Data Preparation
+
+The following chunk of code is to read in the data and prepare the data for analysis
+
+Read in the cleaned data
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+The following chunk of code is to make a family abundance dataframe - we only look at the family level first.
+```{r}
+# transpose the data
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with family label as rownames 
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+
+fam.mat = t(fam.mat)
+
+```
+
+
+The following chunk of code is to make a sample metadata dataframe
+```{r}
+sample_metadata = tibble(samp_metadata)
+samps = rownames(fam.mat)
+rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  ))
+```
+
+## PERMANOVA Analysis
+
+```{r}
+dist_matrix = vegdist(fam.mat, method = "bray")
+
+permanova_result = adonis2(dist_matrix ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result
+```
