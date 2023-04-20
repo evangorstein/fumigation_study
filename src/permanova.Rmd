@@ -7,9 +7,7 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-```
 
-```{r}
 library(vegan)
 library(ggplot2)
 library(tidyverse)
@@ -21,17 +19,17 @@ library(compositions)
 
 ## Background
 
-In the previous stage, we have done some data visualization on the abundance of microbiol OTUs in the dataset from soil of the golf court. 
+We would like to perform PERMANOVA analysis on the microbiome dataset to see if fumigation status and treatment has any effect on the relative abundance of microbes in the soil.
 
-Based on the visualization, it was showing that the relevant abundance was different among samples within 3 groups - those who were never fumigated, those who were fumigated recently, and those who were fumigated more than a month ago. In additions, the samples were also consisted of samples with different treatment.
+The following analysis analyze the family level data, and also from the species level.
 
-It appears there are more difference among relative abundances of microbes between their fumigation status.
+Main package used: https://search.r-project.org/CRAN/refmans/vegan/html/adonis.html
 
-Now, we will use PERMANOVA statistical inference to see if there's statistical evidence that the sample's abundance were different from each other.
+## PERMANOVA Analysis on Family OTUs
 
 ## Data Preparation
 
-The following chunk of code is to read in the data and prepare the data for analysis
+Read in the data and prepare the data for analysis
 
 Read in the cleaned data
 ```{r}
@@ -40,6 +38,7 @@ bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
 ```
 
 The following chunk of code is to make a family abundance dataframe - we only look at the family level first.
+Note that the "Unknown_Family" value aggregates the counts for all the OTUs whose families are unknown
 ```{r}
 # transpose the data
 fam.df = bac_abundance %>% 
@@ -52,14 +51,15 @@ fams = fam.df$Family
 fam.mat = as.matrix(fam.df[,-1])
 rownames(fam.mat) = fams
 
-#fam.mat = t(fam.mat)
+fam.mat = t(fam.mat)
 ```
 
 
-The following chunk of code is to make a sample metadata dataframe
+The following chunk of code is to make a sample metadata dataframe so we have independent variables (sample metadatas such as fumigation status and treatment) in the permanova analysis.
 ```{r}
 sample_metadata = tibble(samp_metadata)
 samps = rownames(fam.mat)
+fam.mat = t(fam.mat)
 rownames(sample_metadata) = samps
 
 sample_metadata = samp_metadata %>%
@@ -71,35 +71,40 @@ sample_metadata = samp_metadata %>%
 ```
 
 ## Data Filtering
-We would like to filter low-abundance data, as those
+We filter low abundance OTUs (family level). We can see if those has any affect in our analysis.
 ```{r}
 fam_mask = rowSums(fam.mat) >= 1000
 fam.filt = fam.mat[fam_mask,]
 
 fam_mask_harsh = rowSums(fam.mat) >= 10000
 fam.filt.harsh = fam.mat[fam_mask_harsh,]
-
-fam.mat = t(fam.mat)
-fam.filt = t(fam.filt)
-fam.filt.harsh = t(fam.filt.harsh)
 ```
 
 ## Data Transformation
-Using clr transformation to make the data more normally distributed - most microbiome studies use clr transformation (I guess?)
+If we would like to do CLR transformation, we can run the following chunk
+However, then we should use Aitchison distance in that case.
+Otherwise, we got the following warning message:
+`results may be meaningless because data have negative entries in method "bray"`
+And also the result might not be correct.
 ```{r}
-min_val = min(fam.mat[fam.mat>0])
-fam.mat = fam.mat + min_val
+#fam.mat = fam.mat + 0.5
+#clr_data = clr(fam.mat)
+#fam.mat = t(clr_data)
+#fam.mat = as.matrix(fam.mat)
+#min_val = min(fam.mat[fam.mat>0])
+#fam.mat = fam.mat + min_val
 
-clr_data= apply(fam.mat, 1, function(x) log(x/exp(mean(log(x)))))
-clr_filt = apply(fam.filt, 1, function(x) log(x/exp(mean(log(x)))))
-clr_filt_harsh= apply(fam.filt.harsh, 1, function(x) log(x/exp(mean(log(x)))))
+# clr_data= apply(fam.mat, 1, function(x) log(x/exp(mean(log(x)))))
+# clr_filt = apply(fam.filt, 1, function(x) log(x/exp(mean(log(x)))))
+# clr_filt_harsh= apply(fam.filt.harsh, 1, function(x) log(x/exp(mean(log(x)))))
 ```
 
 
 ## Normalization  
 https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-017-0237-y - This article suggests we normalize (in particular, library sum) before doing PERMANOVA analysis
 
-The following chunk of code is to normalize the data
+The following chunk of code is to normalize the data before doing PERMANOVA analysis
+In order to use Blue-rays distance, we need to make sure the data is positive, thus using library_sum is the best option.
 ```{r}
 # Log normalize the data would not work because resulting distance matrix would be all 0
 # fam.smooth = fam.mat + 0.5
@@ -110,69 +115,153 @@ The following chunk of code is to normalize the data
 
 # Library size normalization
 fam.ls = t( t(fam.mat) / colSums(fam.mat) )
+fam.ls.filt = t( t(fam.filt) / colSums(fam.filt) )
+fam.ls.harsh = t( t(fam.filt.harsh) / colSums(fam.filt.harsh))
+
 fam.ls.nm = fam.ls[-nrow(fam.ls),]
-fam.ls.nm = fam.ls.nm[rownames(fam.ls.nm)!="Unknown_Family",]
+fam.ls.filt.nm = fam.ls.filt[-nrow(fam.ls.filt),]
+fam.ls.harsh.nm = fam.ls.harsh[-nrow(fam.ls.harsh),]
+
 fam.mat = t(fam.ls.nm)
+fam.mat.filt = t(fam.ls.filt.nm)
+fam.mat.harsh = t(fam.ls.harsh.nm)
+#fam.mat = as.matrix(fam.mat)
 ```
-
-
 
 
 ## PERMANOVA Analysis
 
-Running Permanova analysis to see if fumigation status has any effect on the relative abundance of microbes in the soil.
+Running Permanova analysis on the 3 dataset to see if fumigation status has any effect on the relative abundance of microbes in the soil.
 ```{r}
-dist_matrix = vegdist(fam.mat, method = "bray")
+# calculating the distance matrix, we can specify different method depends on our normalization method
+dist_matrix_1 = vegdist(fam.mat, method = "bray")
+dist_matrix_2 = vegdist(fam.mat.filt, method = "bray")
+dist_matrix_3 = vegdist(fam.mat.harsh, method = "bray")
 
-permanova_result = adonis2(dist_matrix ~ fumigation, data = sample_metadata, permutations = 999)
-permanova_result
+# actually running the permanova analysis
+# 1 - all families without filtering
+permanova_result_1 = adonis2(dist_matrix_1 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_1
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_2 = adonis2(dist_matrix_2 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_2
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_3 = adonis2(dist_matrix_3 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_3
 ```
 
 Running Permanova analysis to see if treatment has any effect on the relative abundance of microbes in the soil.
 ```{r}
-permanova_result_treatment = adonis2(dist_matrix ~ Treatment, data = sample_metadata, permutations = 999)
-permanova_result_treatment 
+# 1 - all families without filtering
+permanova_result_treatment_1 = adonis2(dist_matrix_1 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_1 
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_treatment_2 = adonis2(dist_matrix_2 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_2 
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_treatment_3 = adonis2(dist_matrix_3 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_3 
 ```
 
 
 ## Obervations
-Regardless of the normalization method, the PERMANOVA analysis shows that there is a significant difference in the relative abundance of microbes in the soil based on the fumigation status, and actually, also on the treatment.
+By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, and also on the treatment.
+
+## Potential Issues and Further Steps
+Could try using log normalization and see if the result is different.
+
+
+## PERMANOVA Analysis for Species OTUs
+
+## Data Preparation
+The following chunk of code is to make a species abundance matrix - we only look at the species level.
+Note that the "Unknown_Species" value aggregates the counts for all the OTUs whose families are unknown
+```{r}
+# transpose the data
+species.df = bac_abundance %>% 
+  mutate(Species = fct_na_value_to_level(Species, "Unknown_Species")) %>% #Missing values included in Unknown_Family level
+  group_by(Species) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with species label as rownames 
+species = species.df$Species
+species.mat = as.matrix(species.df[,-1])
+rownames(species.mat) = species
+
+```
+
+No need to try filter due to the large amount of unknown species
+## Normalization
+Apply library sum normalization to the data
+```{r}
+## Normalize by library size
+species.ls = t( t(species.mat) / colSums(species.mat) )
+species.ls.nm = fam.ls[-nrow(species.ls),]
+species.mat = t(species.ls.nm)
+```
+
+## PERMANOVA Analysis
+```{r}
+## Permanova analysis for fumigation status
+dist_matrix_species = vegdist(species.mat, method = "bray")
+
+permanova_result_species = adonis2(dist_matrix_species ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_species
+
+## Permanova analysis for treatment
+permanova_result_species_treatment = adonis2(dist_matrix_species ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_species_treatment
+```
+
+## Obervations
+By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence  ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, and also on the treatment, when looking at species level.
+
+## Potential Issues and Further Steps
+When looking at species level, there's a huge amount of unknown species, and they were all filtered out during the analysis- so result might not be reliable.
+
+## Overall Observation
+The observation is that using current normalization methods and data processing method, we are getting a significant result in PERMANOVA analysis suggesting both the fumigation status and the treatment has effect on the abundance of OTUs.
 
 
 
+```{r include=FALSE}
+# ## Log - for personal use
+# Here is a log keeping some result from Permanova analysis
 
-## Log
-Here is a log keeping some result from Permanova analysis
+# Intepretation of the results:
 
-Intepretation of the results:
-
-Df: degrees of freedom, indicates the levels in the facor minus one. In this case, there are 3 levels in the fumigation factor, so the Df is 3-1 = 2
-SumOfSqs: sum of squares. Vaiance of distance matrix explained by the factor.
-R^2: R-squared, proportion of variance explained by the factor.
-F: F-statistic, value quantifies the ratio of the between-group variance to the within-group variance.
-Pr(>F): p-value, the probability of observing a value of F or greater, assuming that the null hypothesis is true.
+# Df: degrees of freedom, indicates the levels in the facor minus one. In this case, there are 3 levels in the fumigation factor, so the Df is 3-1 = 2
+# SumOfSqs: sum of squares. Vaiance of distance matrix explained by the factor.
+# R^2: R-squared, proportion of variance explained by the factor.
+# F: F-statistic, value quantifies the ratio of the between-group variance to the within-group variance.
+# Pr(>F): p-value, the probability of observing a value of F or greater, assuming that the null hypothesis is true.
 
 
-1. No normalization nor data processing
+# 1. No normalization nor data processing
 
-            Df SumOfSqs      R2     F Pr(>F)
-fumigation   2   18.835 0.45052 97.16  0.001 ***
-Residual   237   22.972 0.54948
-Total      239   41.806 1.00000
+#             Df SumOfSqs      R2     F Pr(>F)
+# fumigation   2   18.835 0.45052 97.16  0.001 ***
+# Residual   237   22.972 0.54948
+# Total      239   41.806 1.00000
 
-            Df SumOfSqs      R2      F Pr(>F)
-Treatment   4    4.736 0.11329 7.5063  0.001 ***
-Residual  235   37.070 0.88671
-Total     239   41.806 1.00000
+#             Df SumOfSqs      R2      F Pr(>F)
+# Treatment   4    4.736 0.11329 7.5063  0.001 ***
+# Residual  235   37.070 0.88671
+# Total     239   41.806 1.00000
 
-2. Library Sum Normalization
+# 2. Library Sum Normalization
 
-           Df SumOfSqs      R2      F Pr(>F)
-fumigation   2   17.947 0.62088 194.06  0.001 ***
-Residual   237   10.959 0.37912
-Total      239   28.906 1.00000
+#            Df SumOfSqs      R2      F Pr(>F)
+# fumigation   2  16.6306 0.64345 213.86  0.001 ***
+# Residual   237   9.2152 0.35655
+# Total      239  25.8458 1.00000
 
-             Df SumOfSqs      R2      F Pr(>F)
-Treatment   4   4.9853 0.17247 12.244  0.001 ***
-Residual  235  23.9207 0.82753
-Total     239  28.9060 1.00000
+#              Df SumOfSqs      R2      F Pr(>F)
+# Treatment   4   5.0307 0.19464 14.199  0.001 ***
+# Residual  235  20.8151 0.80536
+# Total     239  25.8458 1.00000
+```
