@@ -1,0 +1,122 @@
+---
+title: "Exploration of microbiome data following software carpentry tutorial"
+author: "Evan Gorstein"
+date: "2023-04-13"
+output: html_document
+---
+
+Source: https://scienceparkstudygroup.github.io/microbiome-lesson/03-data-exploration-and-properties/index.html
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load packages
+```{r}
+library(here)
+library(vegan)
+library(phyloseq)
+library(tidyverse)
+library(patchwork)
+library(agricolae)
+library(FSA)
+library(rcompanion)
+```
+
+## Import data
+```{r}
+bac_abundance <- readRDS(here("data", "clean", "bac_abundance.RDS"))
+data_grp <- readRDS(here("data", "clean", "samp_metadata.RDS")) %>%
+   mutate(trt_bin = factor(case_when(
+    Time == "Day_0" ~ "Control",
+    Treatment == "Non-fumigated chipping grass" ~ "Control",
+    TRUE ~ "Fumigated"))) %>%
+  mutate(fum = factor(case_when(
+    trt_bin == "Control" ~ "Never",
+    trt_bin == "Fumigated" & Time == "Day_10" ~ "Recent",
+    TRUE ~ "Past"
+  ), levels = c("Never", "Past", "Recent")))
+
+
+data_otu <- select(bac_abundance, starts_with("Samp"))
+#rownames(data_otu) = bac_abundance$sequence 
+
+data_taxo <- select(bac_abundance, -starts_with("Samp"))
+```
+
+## Create phyloseq object
+```{r}
+OTU = otu_table(as.matrix(data_otu), taxa_are_rows = TRUE) # create the occurrence table object in phyloseq format
+SAM = sample_data(data_grp, errorIfNULL = TRUE) # create the sample metadata object in phyloseq format
+TAX = tax_table(as.matrix(data_taxo)) # create the observation metadata object (OTU taxonomy) in phyloseq format
+#Correct sample_names of OTU to match sample_names of SAM
+sample_names(OTU) <- sample_names(SAM)
+data_phylo <- phyloseq(OTU, TAX, SAM) # create the phyloseq object including occurrence table data and sample/observation metadata
+data_phylo # print information about the phyloseq object
+```
+
+## OTU Data Properties
+
+Sparsity 
+```{r}
+sum(data_otu == 0)/(nrow(data_otu)*ncol(data_otu))
+```
+
+Number of samples each OTU appear in:
+```{r}
+non_zero = apply(data_otu, 1, function(x) sum(x!=0))
+plot(non_zero, xlab = "OTU", ylab = "Number of samples", main = "How many samples has each OTU appeared in?")
+```
+
+Rarer OTUS are placed at the end of the table, whereas most common OTUs appear at the top of the table
+
+
+## Sequencing depth
+
+Rarefaction curves for first 96 samples
+```{r}
+col_vec = c(rep("red",40), rep("blue",32), rep("red",8), rep("green",16))
+col_txt = c("Never fumigated", "Past fumigation", "Recent fumigation")
+rarecurve(t(data_otu)[1:96,], step = 100, label = F, lwd = 1.3, col = col_vec, ylab = "Number of ASVs Observed")
+legend(12000, 600, col_txt, col = c("red", "green", "blue"), lty = 1, cex = .7)
+```
+These first 96 samples all have similar library sizes, but the number of ASV's (alpha diversity) differs across fumigation status. In particular, there does not seem to be a sufficient library size to capture the diversity in the never fumigated samples (the black curves don't completely plateau)
+
+Rarefaction curves for samples 97 to 240
+```{r}
+col_vec = c(rep("green",16), rep("red",8),rep(c(rep("green",32), rep("red",8)), 3))
+col_txt = c("Never fumigated", "Past fumigation", "Recent fumigation")
+rarecurve(t(data_otu)[97:240,], step = 100, label = F, lwd = 1.3, col = col_vec, ylab = "Number of ASVs Observed")
+legend(20000, 1500, col_txt, col = c("red", "green", "blue"), lty = 1, cex = .8)
+```
+But for a few exceptions, the library sizes for these samples are much higher and we same a corresponding increase in the number of observed ASVs!
+
+
+Let's verify this by plotting library sizes
+
+```{r}
+
+lib_size <- colSums(data_otu)
+
+data_grp <- data_grp %>%
+  bind_cols(lib_size)
+
+ggplot(data_grp, aes(samp_number, lib_size, color = fum)) +
+  geom_point() +
+  labs(x = "Sample Number", y = "Library Size", title = "Library sizes")
+
+```
+
+I think the takeaway is that we did not obtain sufficient sequencing depth for samples 1 through 96 (at least those samples which were not recently fumigated).
+
+
+
+
+
+
+
+
+
+
+
+
