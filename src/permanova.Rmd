@@ -14,6 +14,8 @@ library(tidyverse)
 library(here)
 library(forcats)
 library(compositions)
+library(dplyr)
+library(stringr)
 ```
 
 
@@ -152,24 +154,50 @@ permanova_result_3 = adonis2(dist_matrix_3 ~ fumigation, data = sample_metadata,
 permanova_result_3
 ```
 
+## Permanova for Treatment
+
+First, filter out correct data
+
+```{r}
+# filter out non-fumigated samples from fam.mat
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+
+samp_ids = sample_metadata_treat %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+fam.mat.treat = fam.mat[rownames(fam.mat) %in% samp_ids, ]
+fam.mat.filt.treat = fam.mat.filt[rownames(fam.mat.filt) %in% samp_ids, ]
+fam.mat.harsh.treat = fam.mat.harsh[rownames(fam.mat.harsh) %in% samp_ids, ]
+```
+
+
 Running Permanova analysis to see if treatment has any effect on the relative abundance of microbes in the soil.
 ```{r}
+# calculating the distance matrix, we can specify different method depends on our normalization method
+dist_matrix_4 = vegdist(fam.mat.treat, method = "bray")
+dist_matrix_5 = vegdist(fam.mat.filt.treat, method = "bray")
+dist_matrix_6 = vegdist(fam.mat.harsh.treat, method = "bray")
+
 # 1 - all families without filtering
-permanova_result_treatment_1 = adonis2(dist_matrix_1 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_1 = adonis2(dist_matrix_4 ~ Treatment, data = sample_metadata_treat, permutations = 999)
 permanova_result_treatment_1 
 
 # 2 - filtering to only families with abundance >= 1000
-permanova_result_treatment_2 = adonis2(dist_matrix_2 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_2 = adonis2(dist_matrix_5 ~ Treatment, data = sample_metadata_treat, permutations = 999)
 permanova_result_treatment_2 
 
 # 3 - filtering to only families with abundance >= 10000
-permanova_result_treatment_3 = adonis2(dist_matrix_3 ~ Treatment, data = sample_metadata, permutations = 999)
+permanova_result_treatment_3 = adonis2(dist_matrix_6 ~ Treatment, data = sample_metadata_treat, permutations = 999)
 permanova_result_treatment_3 
 ```
 
 
 ## Obervations
-By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, and also on the treatment.
+By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status.
+However, there is no statistical significant evidence ($P(F^p > F) > 0.8$) in the relative abundance of microbes in the soil is different based on the treatment for all 3 distance matrices.
 
 ## Potential Issues and Further Steps
 Could try using log normalization and see if the result is different.
@@ -200,7 +228,7 @@ Apply library sum normalization to the data
 ```{r}
 ## Normalize by library size
 species.ls = t( t(species.mat) / colSums(species.mat) )
-species.ls.nm = fam.ls[-nrow(species.ls),]
+species.ls.nm = species.ls[-nrow(species.ls),]
 species.mat = t(species.ls.nm)
 ```
 
@@ -211,20 +239,30 @@ dist_matrix_species = vegdist(species.mat, method = "bray")
 
 permanova_result_species = adonis2(dist_matrix_species ~ fumigation, data = sample_metadata, permutations = 999)
 permanova_result_species
-
-## Permanova analysis for treatment
-permanova_result_species_treatment = adonis2(dist_matrix_species ~ Treatment, data = sample_metadata, permutations = 999)
-permanova_result_species_treatment
 ```
 
+## Permanova for Treatment
+
+```{r}
+## Permanova analysis for treatment
+species.mat.treat = species.mat[rownames(species.mat) %in% samp_ids, ]
+## filter out non-fumigated samples
+dist_matrix_species_2 = vegdist(species.mat.treat, method = "bray")
+
+permanova_result_species_2 = adonis2(dist_matrix_species_2 ~ Treatment, data = sample_metadata_treat, permutations = 999)
+permanova_result_species_2
+```
+
+
 ## Obervations
-By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence  ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, and also on the treatment, when looking at species level.
+By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence  ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, when looking at species level.
+However, there is no statistical significant evidence ($P(F^p > F) = 0.863$) in the relative abundance of microbes in the soil is different based on the treatment, when looking at species level.
 
 ## Potential Issues and Further Steps
 When looking at species level, there's a huge amount of unknown species, and they were all filtered out during the analysis- so result might not be reliable.
 
 ## Overall Observation
-The observation is that using current normalization methods and data processing method, we are getting a significant result in PERMANOVA analysis suggesting both the fumigation status and the treatment has effect on the abundance of OTUs.
+The observation is that using current normalization methods and data processing method, we are getting a significant result in PERMANOVA analysis suggesting both the fumigation status has effect on the abundance of OTUs. But treatment has no effect on the abundance of OTUs
 
 
 
@@ -265,3 +303,182 @@ The observation is that using current normalization methods and data processing 
 # Residual  235  20.8151 0.80536
 # Total     239  25.8458 1.00000
 ```
+
+
+
+
+Now we perform same analysis on Fungi data
+
+## Permanova for Fungi
+
+## Data Preparation
+Read in the cleaned data
+```{r}
+fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+```
+
+```{r}
+genus.df = fung_abundance %>% 
+  mutate(Genus = fct_na_value_to_level(Genus, "Unknown")) %>%
+  group_by(Genus) %>%
+  summarise(across(starts_with("Samp"), sum)) 
+
+#Convert to matrix with genus label as rowname
+genuses = genus.df$Genus
+genus.mat = as.matrix(genus.df[,-1])
+rownames(genus.mat) = genuses
+```
+
+The following chunk of code is to make a sample metadata dataframe so we have independent variables (sample metadatas such as fumigation status and treatment) in the permanova analysis.
+```{r}
+sample_metadata = tibble(samp_metadata)
+samps = rownames(fam.mat)
+fam.mat = t(fam.mat)
+rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  ))
+```
+
+We create several masks for filtering for different abundances
+```{r}
+genus_mask = rowSums(genus.mat) >= 100
+genus.filt = genus.mat[genus_mask,]
+
+genus_mask_harsh = rowSums(genus.mat) >= 1000
+genus.filt.harsh = genus.mat[genus_mask_harsh,]
+
+```
+
+Now we normalize the data
+```{r}
+genus.ls = t( t(genus.mat) / colSums(genus.mat) )
+genus.ls.filt = t( t(genus.filt) / colSums(genus.filt) )
+genus.ls.harsh = t( t(genus.filt.harsh) / colSums(genus.filt.harsh))
+
+genus.ls.nm = genus.ls[-nrow(genus.ls),]
+genus.ls.filt.nm = genus.ls.filt[-nrow(genus.ls.filt),]
+genus.ls.harsh.nm = genus.ls.harsh[-nrow(genus.ls.harsh),]
+
+genus.mat = t(genus.ls.nm)
+genus.mat.filt = t(genus.ls.filt.nm)
+genus.mat.harsh = t(genus.ls.harsh.nm)
+```
+
+
+## PERMANOVA Analysis
+
+Running Permanova analysis on the 3 dataset to see if fumigation status has any effect on the relative abundance of microbes in the soil.
+```{r}
+# calculating the distance matrix, we can specify different method depends on our normalization method
+dist_matrix_fun_1 = vegdist(genus.mat, method = "bray")
+dist_matrix_fun_2 = vegdist(genus.mat.filt, method = "bray")
+dist_matrix_fun_3 = vegdist(genus.mat.harsh, method = "bray")
+
+# actually running the permanova analysis
+# 1 - all families without filtering
+permanova_result_fun_1 = adonis2(dist_matrix_fun_1 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_fun_1
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_fun_2 = adonis2(dist_matrix_fun_2 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_fun_2
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_fun_3 = adonis2(dist_matrix_fun_3 ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_fun_3
+```
+
+
+## Permanova for Treatment
+
+First, filter out correct data
+
+```{r}
+# filter out non-fumigated samples from fam.mat
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+
+samp_ids = sample_metadata_treat %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+genus.mat.treat = genus.mat[rownames(genus.mat) %in% samp_ids, ]
+genus.mat.filt.treat = genus.mat.filt[rownames(genus.mat.filt) %in% samp_ids, ]
+genus.mat.harsh.treat = genus.mat.harsh[rownames(genus.mat.harsh) %in% samp_ids, ]
+```
+
+Running Permanova analysis to see if treatment has any effect on the relative abundance of microbes in the soil.
+```{r}
+# calculating the distance matrix, we can specify different method depends on our normalization method
+dist_matrix_fun_4 = vegdist(genus.mat.treat, method = "bray")
+dist_matrix_fun_5 = vegdist(genus.mat.filt.treat, method = "bray")
+dist_matrix_fun_6 = vegdist(genus.mat.harsh.treat, method = "bray")
+
+# 1 - all families without filtering
+permanova_result_treatment_fun_1 = adonis2(dist_matrix_fun_4 ~ Treatment, data = sample_metadata_treat, permutations = 999)
+permanova_result_treatment_fun_1 
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_treatment_fun_2 = adonis2(dist_matrix_fun_5 ~ Treatment, data = sample_metadata_treat, permutations = 999)
+permanova_result_treatment_fun_2 
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_treatment_fun_3 = adonis2(dist_matrix_fun_6 ~ Treatment, data = sample_metadata_treat, permutations = 999)
+permanova_result_treatment_fun_3 
+```
+
+
+## Permanova for Species
+
+```{r}
+# transpose the data
+species.df = fung_abundance %>% 
+  mutate(Species = fct_na_value_to_level(Species, "Unknown_Species")) %>% #Missing values included in Unknown_Family level
+  group_by(Species) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with species label as rownames 
+species = species.df$Species
+species.mat = as.matrix(species.df[,-1])
+rownames(species.mat) = species
+
+```
+
+## Normalization
+Apply library sum normalization to the data
+```{r}
+## Normalize by library size
+species.ls = t( t(species.mat) / colSums(species.mat) )
+species.ls.nm = species.ls[-nrow(species.ls),]
+species.mat = t(species.ls.nm)
+```
+
+## PERMANOVA Analysis
+```{r}
+## Permanova analysis for fumigation status
+dist_matrix_species = vegdist(species.mat, method = "bray")
+
+permanova_result_species = adonis2(dist_matrix_species ~ fumigation, data = sample_metadata, permutations = 999)
+permanova_result_species
+```
+
+## Permanova for Treatment
+
+```{r}
+## Permanova analysis for treatment
+species.mat.treat = species.mat[rownames(species.mat) %in% samp_ids, ]
+## filter out non-fumigated samples
+dist_matrix_species_2 = vegdist(species.mat.treat, method = "bray")
+
+permanova_result_species_2 = adonis2(dist_matrix_species_2 ~ Treatment, data = sample_metadata_treat, permutations = 999)
+permanova_result_species_2
+```
+
+We observe similar pattern in fungi compare to bacteria. Fumigation status has effect on the abundance of OTUs, but treatment does not.
