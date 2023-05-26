@@ -78,7 +78,9 @@ summary(model_both)
 
 
 Here is 2 models for fumigation and treatment separately. 
+
 ## Linear Regression
+
 Here is a plot to visualize the distribution of alpha diversity
 
 ```{r}
@@ -139,4 +141,5 @@ ggplot() +
   theme_minimal() +
   labs(title="Residual Plot", x="Fitted values", y="Residuals")
 ```
+
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
