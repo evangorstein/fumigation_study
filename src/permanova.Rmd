@@ -179,7 +179,7 @@ Running Permanova analysis to see if treatment has any effect on the relative ab
 # calculating the distance matrix, we can specify different method depends on our normalization method
 dist_matrix_4 = vegdist(fam.mat.treat, method = "bray")
 dist_matrix_5 = vegdist(fam.mat.filt.treat, method = "bray")
-dist_matrix_6 = vegdist(fam.mat.harshtreat, method = "bray")
+dist_matrix_6 = vegdist(fam.mat.harsh.treat, method = "bray")
 
 # 1 - all families without filtering
 permanova_result_treatment_1 = adonis2(dist_matrix_4 ~ Treatment, data = sample_metadata_treat, permutations = 999)
