@@ -69,6 +69,16 @@ sample_metadata = sample_metadata %>%
   mutate(shannon = alpha_div)
 ```
 
+
+## Linear Regression for Fumigation Status and Treatment with Alpha Diversity
+```{r}
+model_both <- lm(shannon ~ fumigation * Treatment, data = sample_metadata)
+summary(model_both)
+```
+
+
+Here is 2 models for fumigation and treatment separately. 
+## Linear Regression
 Here is a plot to visualize the distribution of alpha diversity
 
 ```{r}
@@ -79,14 +89,14 @@ ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
 
 ```
 
-## Linear Regression
+
 First fit the linear regression for alpha diversity and fumigation status.
 ```{r}
 model = lm(shannon ~ fumigation, data = sample_metadata)
 summary(model)
 ```
 
-We check the residual to see if linear model is appropriate
+Check the residual to see if linear model is appropriate
 ```{r}
 residuals = resid(model)
 fitted_values = fitted(model)
@@ -97,3 +107,36 @@ ggplot() +
   theme_minimal() +
   labs(title="Residual Plot", x="Fitted values", y="Residuals")
 ```
+
+## Linear Model for Treatment
+
+```{r}
+# filter out samples that is not fumigated
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+
+# boxplot for alpha diversity by treatment
+ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title="Alpha-Diversity by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity")
+```
+
+Linear Model for treatment and alpha diversity
+```{r}
+model_t = lm(shannon ~ Treatment, data = sample_metadata_treat)
+summary(model_t)
+```
+
+Residual Plot
+```{r}
+residuals_t = resid(model_t)
+fitted_values_t = fitted(model_t)
+
+ggplot() +
+  geom_point(aes(x = fitted_values_t, y = residuals_t)) +
+  geom_hline(yintercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title="Residual Plot", x="Fitted values", y="Residuals")
+```
+It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
