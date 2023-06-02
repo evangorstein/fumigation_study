@@ -1,0 +1,75 @@
+---
+title: "CAR_LASSO for Soil Microbiome"
+author: "Tianyi Xu"
+date: "2023-06-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(CARlasso)
+library(tidyverse)
+library(dplyr)
+```
+
+## CAR_LASSO for Soil Microbiome
+
+Read in data first
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+prepare the data
+```{r}
+# transpose the data
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with family label as rownames 
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = t(fam.mat)
+```
+
+Add fumigation status to the metadata
+```{r}
+sample_metadata = tibble(samp_metadata)
+samps = rownames(fam.mat)
+rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  )) %>%
+  mutate(sample_name = samps)
+```
+
+Add column to fam.mat with the fumigation status and treatment
+```{r}
+fam.df = as.data.frame(fam.mat)
+otus = names(fam.df)
+
+fam.df$fumigation <- sample_metadata$fumigation
+fam.df$Treatment <- sample_metadata$Treatment
+```
+
+Run CAR_LASSO
+```{r}
+otu_quoted = paste0("`", otus, "`")
+formula = paste(otu_quoted, collapse = "+")
+
+formula = paste(formula, "~ fumigation")
+formula = as.formula(formula)
+```
+
+```{r}
+model_response = CARlasso(formula, data = fam.df, link = "log", adaptive = TRUE)
+```
