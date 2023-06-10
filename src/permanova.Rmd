@@ -52,7 +52,7 @@ fam.df = bac_abundance %>%
 fams = fam.df$Family
 fam.mat = as.matrix(fam.df[,-1])
 rownames(fam.mat) = fams
-
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
 fam.mat = t(fam.mat)
 ```
 
@@ -219,6 +219,7 @@ species.df = bac_abundance %>%
 species = species.df$Species
 species.mat = as.matrix(species.df[,-1])
 rownames(species.mat) = species
+species.mat = species.mat[rownames(species.mat)!="Unknown_Species",]
 
 ```
 
@@ -328,6 +329,7 @@ genus.df = fung_abundance %>%
 genuses = genus.df$Genus
 genus.mat = as.matrix(genus.df[,-1])
 rownames(genus.mat) = genuses
+genus.mat = genus.mat[rownames(genus.mat)!="Unknown",]
 ```
 
 The following chunk of code is to make a sample metadata dataframe so we have independent variables (sample metadatas such as fumigation status and treatment) in the permanova analysis.
@@ -448,7 +450,7 @@ species.df = fung_abundance %>%
 species = species.df$Species
 species.mat = as.matrix(species.df[,-1])
 rownames(species.mat) = species
-
+species.mat = species.mat[rownames(species.mat)!="Unknown_Species",]
 ```
 
 ## Normalization
