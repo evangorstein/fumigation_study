@@ -12,6 +12,7 @@ library(here)
 library(CARlasso)
 library(tidyverse)
 library(dplyr)
+library(stringr)
 ```
 
 ## CAR_LASSO for Soil Microbiome
@@ -24,23 +25,32 @@ bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
 
 prepare the data
 ```{r}
-# transpose the data
-fam.df = bac_abundance %>% 
-  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+# only look at family level
+fam_abun = bac_abundance %>% 
+  mutate(Family = fct_explicit_na(Family, "Missing")) %>%
   group_by(Family) %>%
-  summarise(across(starts_with("Samp"), sum))  
+  summarise(across(starts_with("Samp"), sum)) 
 
-#Convert to matrix with family label as rownames 
-fams = fam.df$Family
-fam.mat = as.matrix(fam.df[,-1])
-rownames(fam.mat) = fams
-fam.mat = t(fam.mat)
+fam = fam_abun$Family
+
+count_data_no_missing = t(fam_abun[fam!="Missing",-1])
+colnames(count_data_no_missing) = fam[-length(fam)]
+
+## Filter to only look at taxa appearing in at least 160 samples
+taxa_filt = colSums(count_data_no_missing > 0) >= 160
+counts_filt = count_data_no_missing[,taxa_filt]
+
+#Filter to only look at samples in which at least 50 of the remaining taxa show up
+samp_filt = rowSums(counts_filt > 0) >= 50
+counts_filt = counts_filt[samp_filt,]
+
+#Get rid of single sample that doesn't meet the criteria in count_data_no_missing, as well
+count_data_no_missing = count_data_no_missing[samp_filt,]
 ```
 
 Add fumigation status to the metadata
 ```{r}
 sample_metadata = tibble(samp_metadata)
-samps = rownames(fam.mat)
 rownames(sample_metadata) = samps
 
 sample_metadata = samp_metadata %>%
@@ -49,16 +59,39 @@ sample_metadata = samp_metadata %>%
     Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
     Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
   )) %>%
-  mutate(sample_name = samps)
+  mutate(sample_name = case_when(
+    samp_number < 10 ~ paste0("Samp00", samp_number),
+    samp_number < 100 ~ paste0("Samp0", samp_number),
+    TRUE ~ paste0("Samp", samp_number)
+  ))
+
 ```
+
+
 
 Add column to fam.mat with the fumigation status and treatment
 ```{r}
-fam.df = as.data.frame(fam.mat)
-otus = names(fam.df)
+never_fumigated = sample_metadata %>% 
+  filter(fumigation == "never") %>%
+  pull(sample_name)
 
-fam.df$fumigation <- sample_metadata$fumigation
-fam.df$Treatment <- sample_metadata$Treatment
+recent_fumigated = sample_metadata %>%
+  filter(fumigation == "recent") %>%
+  pull(sample_name)
+
+past_fumigated = sample_metadata %>%
+  filter(fumigation == "past") %>%
+  pull(sample_name)
+
+fam.df = as.data.frame(counts_filt)
+otus = colnames(fam.df)
+fam.df = fam.df %>%
+  mutate(sample_name = rownames(fam.df)) %>%
+  mutate(fumigation_status = case_when(
+    sample_name %in% never_fumigated ~ "never",
+    sample_name %in% recent_fumigated ~ "recent",
+    sample_name %in% past_fumigated ~ "past"
+  ))
 ```
 
 Run CAR_LASSO
@@ -66,7 +99,7 @@ Run CAR_LASSO
 otu_quoted = paste0("`", otus, "`")
 formula = paste(otu_quoted, collapse = "+")
 
-formula = paste(formula, "~ fumigation")
+formula = paste(formula, "~ fumigation_status")
 formula = as.formula(formula)
 ```
 

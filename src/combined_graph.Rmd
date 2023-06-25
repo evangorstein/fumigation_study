@@ -1,0 +1,176 @@
+---
+title: "Network Analysis"
+author: "Tianyi Xu"
+date: "2023-06-22"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+library(glasso)
+library(igraph)
+library(qgraph)
+library(ggraph)
+```
+
+Read in the data
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+Data Preprocessing
+    
+```{r}
+# Aggregate based on families. Choose to look at family OTU.
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum)) 
+
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = t(fam.mat)
+
+# add sample number to metadata for each samples.
+samp_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  )) %>%
+  mutate(sample_name = case_when(
+    samp_number < 10 ~ paste0("Samp00", samp_number),
+    samp_number < 100 ~ paste0("Samp0", samp_number),
+    TRUE ~ paste0("Samp", samp_number)
+  ))
+
+# pull out samples based on fumigation time
+never = samp_metadata %>% filter(fumigation == "never") %>% pull(sample_name)
+recent = samp_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
+past = samp_metadata %>% filter(fumigation == "past") %>% pull(sample_name)
+
+# create 3 different matrix for 3 fumigation time
+fam.mat.never = fam.mat[never,]
+fam.mat.recent = fam.mat[recent,]
+fam.mat.past = fam.mat[past,]
+```
+
+Function for data analysis
+
+```{r}
+# create a function to process matrix
+create_matrix = function(mat){
+    # clr transformation
+    mat = mat + 0.5
+    mat = clr(mat)
+
+    # correlation matrix
+    mat = cor(mat)
+    return(mat)
+}
+
+glasso_net = function(mat, rho){
+    net = glasso(mat, rho = rho)
+    p.net = net$wi
+    colnames(p.net) = colnames(mat)
+    rownames(p.net) = rownames(mat)
+
+    # check if matrix is symmetric
+    if (!isSymmetric(p.net)) {
+        p.net[lower.tri(p.net)] = t(p.net)[lower.tri(p.net)]
+    }
+
+    # calculate partical correlation matrix
+    parr.corr.net = matrix(nrow = nrow(p.net), ncol = ncol(p.net))
+
+    for(k in 1:nrow(parr.corr.net)) {
+        for(j in 1:ncol(parr.corr.net)) {
+        parr.corr.net[j, k] = -p.net[j,k]/sqrt(p.net[j,j]*p.net[k,k])
+        }
+    }
+
+    colnames(parr.corr.net) = colnames(p.net)
+    rownames(parr.corr.net) = rownames(p.net)
+    diag(parr.corr.net) = 0
+
+    net.glasso = graph.adjacency(parr.corr.net, mode = "undirected", weighted = TRUE, diag = FALSE)
+    return(net.glasso)
+}
+
+# function for dissimilarity matrix
+dis_net = function(mat, cutoff){
+    diss.mat = as.matrix(vegdist(t(mat)), method = "bray")
+    diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
+    net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
+    return(net.diss)
+}
+
+# function for correlation matrix method
+corr_net = function(mat, cutoff){
+    mat = mat + 0.5
+    mat = clr(mat)
+    cor.mat = cor(mat, method = "pearson")
+    corr.adj = ifelse(abs(cor.mat) >= cutoff, 1, 0)
+    net.corr = graph.adjacency(corr.adj, mode = "undirected", diag = FALSE)
+    return(net.corr)
+}
+```
+
+Plot the network - Glasso
+
+```{r}
+# first get transformed matrix
+never.mat = create_matrix(fam.mat.never)
+recent.mat = create_matrix(fam.mat.recent)
+past.mat = create_matrix(fam.mat.past)
+
+never.glasso = glasso_net(never.mat, 0.75)
+recent.glasso = glasso_net(recent.mat, 0.75)
+past.glasso = glasso_net(past.mat, 0.75)
+
+# convert glasso weight to positive
+E(never.glasso)$weight = E(never.glasso)$weight - (min(E(never.glasso)$weight)) + 0.0001
+E(recent.glasso)$weight = E(recent.glasso)$weight - (min(E(recent.glasso)$weight)) + 0.0001
+E(past.glasso)$weight = E(past.glasso)$weight - (min(E(past.glasso)$weight)) + 0.0001
+
+# calculate degrees
+V(never.glasso)$degree = degree(never.glasso)
+V(recent.glasso)$degree = degree(recent.glasso)
+V(past.glasso)$degree = degree(past.glasso)
+
+# detect communities
+communities.never = cluster_fast_greedy(never.glasso)
+communities.recent = cluster_fast_greedy(recent.glasso)
+communities.past = cluster_fast_greedy(past.glasso)
+
+V(never.glasso)$community = communities.never$membership
+V(recent.glasso)$community = communities.recent$membership
+V(past.glasso)$community = communities.past$membership
+```
+
+```{r}
+# plot the network
+ggraph(never.glasso, layout = 'fr') +
+  geom_edge_link(aes(width = weight, alpha = weight), edge_colour = 'black') +
+  geom_node_point(aes(size = degree, color = as.factor(community))) +
+  scale_color_viridis(discrete = TRUE, option = "viridis", direction = -1) +
+  theme_void()
+```
+
+```{r}
+#installation
+install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+devtools::install_github("schochastics/networkdata")
+```

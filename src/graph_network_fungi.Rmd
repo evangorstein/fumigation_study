@@ -1,0 +1,480 @@
+---
+title: "Network Analysis for Fungi"
+author: "Tianyi Xu"
+date: "2023-06-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+library(glasso)
+library(igraph)
+library(qgraph)
+```
+
+Read in data.
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+Aggregate families
+```{r}
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum)) 
+
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = t(fam.mat)
+```
+
+Modify metadata for samples
+```{r}
+sample_metadata = tibble(samp_metadata)
+#rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  )) %>%
+  mutate(sample_name = case_when(
+    samp_number < 10 ~ paste0("Samp00", samp_number),
+    samp_number < 100 ~ paste0("Samp0", samp_number),
+    TRUE ~ paste0("Samp", samp_number)
+  ))
+```
+
+Data Processing
+```{r}
+never = sample_metadata %>% filter(fumigation == "never") %>% pull(sample_name)
+recent = sample_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
+past = sample_metadata %>% filter(fumigation == "past") %>% pull(sample_name)
+
+fam.mat.never = fam.mat[never,]
+fam.mat.recent = fam.mat[recent,]
+fam.mat.past = fam.mat[past,]
+```
+
+Apply clr transformation. It is recommended to do some transformation or normalization before applying glasso.
+```{r}
+fam.mat.never = fam.mat.never + 0.5
+fam.mat.recent = fam.mat.recent + 0.5
+fam.mat.past = fam.mat.past + 0.5
+
+fam.mat.never.clr = clr(fam.mat.never)
+fam.mat.recent.clr = clr(fam.mat.recent)
+fam.mat.past.clr = clr(fam.mat.past)
+
+```
+
+Calculate Correlation Matrix
+```{r}
+never_mat = cor(fam.mat.never.clr)
+recent_mat = cor(fam.mat.recent.clr)
+past_mat = cor(fam.mat.past.clr)
+
+```
+
+glasso
+```{r}
+rho = 0.75
+never_glasso = glasso(never_mat, rho)
+recent_glasso = glasso(recent_mat, rho)
+past_glasso = glasso(past_mat, rho)
+
+```
+
+Calculate Partial Correlation Matrix
+```{r}
+p.never = never_glasso$wi
+p.recent = recent_glasso$wi
+p.past = past_glasso$wi
+
+colnames(p.never) = colnames(never_mat)
+rownames(p.never) = rownames(never_mat)
+
+colnames(p.recent) = colnames(recent_mat)
+rownames(p.recent) = rownames(recent_mat)
+
+colnames(p.past) = colnames(past_mat)
+rownames(p.past) = rownames(past_mat)
+```
+
+Check if the matrix are symmetric
+```{r}
+if (!isSymmetric(p.never)) {
+  p.never[lower.tri(p.never)] = t(p.never)[lower.tri(p.never)]
+}
+
+if (!isSymmetric(p.recent)) {
+  p.recent[lower.tri(p.recent)] = t(p.recent)[lower.tri(p.recent)]
+}
+
+if (!isSymmetric(p.past)) {
+  p.past[lower.tri(p.past)] = t(p.past)[lower.tri(p.past)]
+}
+
+```
+
+Calculate
+```{r}
+parr.corr.never = matrix(nrow = nrow(p.never), ncol = ncol(p.never))
+parr.corr.recent = matrix(nrow = nrow(p.recent), ncol = ncol(p.recent))
+parr.corr.past = matrix(nrow = nrow(p.past), ncol = ncol(p.past))
+
+for(k in 1:nrow(parr.corr.never)) {
+  for(j in 1:ncol(parr.corr.never)) {
+    parr.corr.never[j, k] = -p.never[j,k]/sqrt(p.never[j,j]*p.never[k,k])
+  }
+}
+
+for(k in 1:nrow(parr.corr.recent)) {
+  for(j in 1:ncol(parr.corr.recent)) {
+    parr.corr.recent[j, k] = -p.recent[j,k]/sqrt(p.recent[j,j]*p.recent[k,k])
+  }
+}
+
+for(k in 1:nrow(parr.corr.past)) {
+  for(j in 1:ncol(parr.corr.past)) {
+    parr.corr.past[j, k] = -p.past[j,k]/sqrt(p.past[j,j]*p.past[k,k])
+  }
+}
+
+colnames(parr.corr.never) = colnames(p.never)
+rownames(parr.corr.never) = rownames(p.never)
+colnames(parr.corr.recent) = colnames(p.recent)
+rownames(parr.corr.recent) = rownames(p.recent)
+colnames(parr.corr.past) = colnames(p.past)
+rownames(parr.corr.past) = rownames(p.past)
+
+diag(parr.corr.never) = 0
+diag(parr.corr.recent) = 0
+diag(parr.corr.past) = 0
+
+```
+
+Build a net graph
+
+```{r}
+glasso.net.never = graph_from_adjacency_matrix(parr.corr.never,
+                                    mode="undirected",
+                                    weighted=TRUE)
+
+glasso.net.recent = graph_from_adjacency_matrix(parr.corr.recent,
+                                    mode = "undirected",
+                                    weighted = TRUE)
+
+glasso.net.past = graph_from_adjacency_matrix(parr.corr.past,
+                                    mode = "undirected",
+                                    weighted = TRUE)
+
+```
+
+Disimillarity matrix graph network
+
+```{R}
+diss.mat.never = as.matrix(vegdist(t(fam.mat.never)), method = "bray")
+diss.mat.recent = as.matrix(vegdist(t(fam.mat.recent)), method = "bray")
+diss.mat.past = as.matrix(vegdist(t(fam.mat.past)), method = "bray")
+
+diss.cutoff = 0.2
+
+diss.adj.never = ifelse(diss.mat.never <= diss.cutoff, 1, 0)
+diss.adj.recent = ifelse(diss.mat.recent <= diss.cutoff, 1, 0)
+diss.adj.past = ifelse(diss.mat.past <= diss.cutoff, 1, 0)
+
+diss.net.never = graph.adjacency(diss.adj.never, mode = "undirected",
+                           diag = FALSE)
+diss.net.recent = graph.adjacency(diss.adj.recent, mode = "undirected",
+                            diag = FALSE)
+diss.net.past = graph.adjacency(diss.adj.past, mode = "undirected",
+                          diag = FALSE)
+```
+
+Build a correlation matrix graph network
+
+```{r}
+cor.matrix.never = cor(fam.mat.never.clr, method = "pearson")
+cor.matrix.recent = cor(fam.mat.recent.clr, method = "pearson")
+cor.matrix.past = cor(fam.mat.past.clr, method = "pearson")
+
+cor.cutoff = 0.75
+
+cor.adj.never = ifelse(abs(cor.matrix.never) >= cor.cutoff, 1, 0)
+cor.adj.recent = ifelse(abs(cor.matrix.recent) >= cor.cutoff, 1, 0)
+cor.adj.past = ifelse(abs(cor.matrix.past) >= cor.cutoff, 1, 0)
+
+cor.net.never = graph.adjacency(cor.adj.never, mode = "undirected",
+                           diag = FALSE)
+cor.net.recent = graph.adjacency(cor.adj.recent, mode = "undirected",
+                            diag = FALSE)
+cor.net.past = graph.adjacency(cor.adj.past, mode = "undirected",
+                          diag = FALSE)
+
+```
+
+
+Decide which type of network to use
+```{r}
+#net.never = glasso.net.never
+#net.never = diss.net.never
+net.never = cor.net.never
+
+#net.recent = glasso.net.recent
+#net.recent = diss.net.recent
+net.recent = cor.net.recent
+
+#net.past = glasso.net.past
+#net.past = diss.net.past
+net.past = cor.net.past
+```
+
+Analysis: Replication of old Analysis from: https://github.com/solislemuslab/soil-network-koch/blob/master/network_analysis.Rmd
+```{r}
+# convert edge weight to positive
+#E(net.never)$weight = E(net.never)$weight - (min(E(net.never)$weight))
+#E(net.recent)$weight = E(net.recent)$weight - (min(E(net.recent)$weight))
+#E(net.past)$weight = E(net.past)$weight - (min(E(net.past)$weight))
+
+#calculate hubbiness score
+hubbiness.never = hub_score(net.never)$vector
+hubbiness.recent = hub_score(net.recent)$vector
+hubbiness.past = hub_score(net.past)$vector
+
+#plot of abundance vs centrality
+#TODO: figure out what the plot means - not very useful if we have multiple fumigation status.
+#plot(x = c(fam.mat[1,]), y = c(hubbiness.never), 
+#     xlab = "Relative abundance", ylab = "Hubbiness score")
+```
+
+Clusters
+```{r}
+# Get clusters
+# short random walks tend to stay in the same community
+wt.never = walktrap.community(net.never)
+wt.recent = walktrap.community(net.recent)
+wt.past = walktrap.community(net.past)
+
+#plot_dendrogram(wt.never)
+#plot_dendrogram(wt.recent)
+#plot_dendrogram(wt.past)
+
+centralityPlot(net.never, 
+               include = c("Degree", "Closeness","Betweenness"),
+               orderBy = "Degree")
+centralityPlot(net.recent, 
+               include = c("Degree", "Closeness","Betweenness"),
+               orderBy = "Degree")
+centralityPlot(net.past, 
+               include = c("Degree", "Closeness","Betweenness"),
+               orderBy = "Degree")
+```
+
+Degree Analysis
+```{r}
+deg.never = degree(net.never, mode = "all")
+deg.recent = degree(net.recent, mode = "all")
+deg.past = degree(net.past, mode = "all")
+
+deg.dist.never = degree_distribution(net.never, mode = "all", cumulative = T)
+deg.dist.recent = degree_distribution(net.recent, mode = "all", cumulative = T)
+deg.dist.past = degree_distribution(net.past, mode = "all", cumulative = T)
+
+plot(deg.dist.never, xlab = "Nodes degree", ylab = "Probability")
+lines(deg.dist.never)
+
+plot(deg.dist.recent, xlab = "Nodes degree", ylab = "Probability")
+lines(deg.dist.recent)
+
+plot(deg.dist.past, xlab = "Nodes degree", ylab = "Probability")
+lines(deg.dist.past)
+```
+
+```{r}
+#(removing it disconnect the graph)
+AP.never = articulation.points(net.never)
+AP.recent = articulation.points(net.recent)
+AP.past = articulation.points(net.past)
+
+# get the membership of the largest cluster
+group.never = sapply(groups(wt.never), length)
+group.recent = sapply(groups(wt.recent), length)
+group.past = sapply(groups(wt.past), length)
+
+key.never = wt.never[group.never == max(group.never)]
+key.recent = wt.recent[group.recent == max(group.recent)]
+key.past = wt.past[group.past == max(group.past)]
+
+paste( unlist(key.never), collapse=', ')
+paste( unlist(key.recent), collapse=', ')
+paste( unlist(key.past), collapse=', ')
+```
+
+
+Plotting the network
+```{r}
+plot.net.cls = function(net, scores, cls, AP, outfile, title) {
+  # Get size of clusters to find isolated nodes.
+  # groups: get a list of vertex groups from community object
+  cls_sizes = sapply(groups(cls), length)
+  # Randomly choosing node colors
+  #colors = sample(colours(), length(cls))
+  colors = rainbow(length(cls))
+  
+  # Nodes in clusters will be color coded
+  # Isolated nodes will be white.
+  V(net)$color = sapply(membership(cls),
+                         function(x) {
+                            ifelse(cls_sizes[x]>1, 
+                                   colors[x],
+                                   "white")
+                            }
+                          )
+  # Convert node label from names to numerical IDs.
+  node.names = V(net)$name
+  col_ids = seq(1, length(node.names))
+  V(net)$name = col_ids
+  # To draw a halo around articulation points.
+  AP = lapply(names(AP), function(x) x)
+  marks = lapply(1:length(AP), 
+                  function(x) which(node.names == AP[[x]]))
+  # Define output image file.
+  outfile = paste(outfile, "jpg", sep=".")
+  # Image properties.
+  jpeg(outfile, width = 5800, height = 14000, res = 300, 
+       quality = 100)
+  par(oma = c(4, 1, 1, 1))
+  # Customized layout to avoid nodes overlapping.
+  e = get.edgelist(net)
+  class(e) = "numeric"
+  #get the layout of the graph
+  l = qgraph.layout.fruchtermanreingold(e,
+    # area default is the square of number of nodes
+    vcount=vcount(net), area=32*(vcount(net)^2))
+  # Main plot function.
+  #l = layout_nicely(net)
+
+  plot(net, vertex.size = (scores*5)+4, vertex.label.cex=0.9,
+       vertex.label.color = "black", mark.border="black",
+       mark.groups = marks, mark.col = "white", 
+       mark.expand = 10, mark.shape = 1, layout=l)
+  title(title, cex.main=4)
+  # Plot legend containing taxa names
+  labels = paste(as.character(V(net)), node.names, sep = ") ")
+  legend("bottom", legend = labels, xpd = TRUE, ncol = 5, 
+         cex = 1.2)
+  dev.off()
+}
+plot.net.cls(net.never, hubbiness.never, wt.never, AP.never, outfile = "network_graph_never_corr",
+title = "Microbial Network for Never Fumigated Samples Using Correlation Matrix")
+
+plot.net.cls(net.recent, hubbiness.recent, wt.recent, AP.recent, outfile = "network_graph_recent_corr",
+title = "Microbial Network for Recent Fumigated Samples Using Correlation Matrix")
+
+plot.net.cls(net.past, hubbiness.past, wt.past, AP.past, outfile = "network_graph_past_corr",
+title = "Microbial Network for Past Fumigated Samples Using Correlation Matrix")
+```
+
+Identify top 10 nodes for each network by hubbiness score
+```{r}
+top.never = sort(hubbiness.never, decreasing = TRUE)[1:10]
+top.recent = sort(hubbiness.recent, decreasing = TRUE)[1:10]
+top.past = sort(hubbiness.past, decreasing = TRUE)[1:10]
+top.never
+top.recent
+top.past
+```
+
+Identify top 10 nodes for each network by degree
+```{r}
+top.degree.never = sort(deg.never, decreasing = TRUE)[1:10]
+top.degree.recent = sort(deg.recent, decreasing = TRUE)[1:10]
+top.degree.past = sort(deg.past, decreasing = TRUE)[1:10]
+
+top.degree.never
+top.degree.recent
+top.degree.past
+```
+
+Identify articulation nodes for each network
+```{r}
+art.never = names(AP.never)
+art.recent = names(AP.recent)
+art.past = names(AP.past)
+
+art.never
+art.recent
+art.past
+```
+
+
+Further Analysis
+```{r}
+#E(net.never)$weight = E(net.never)$weight - (min(E(net.never)$weight)) + 0.01
+#E(net.recent)$weight = E(net.recent)$weight - (min(E(net.recent)$weight)) + 0.01
+#E(net.past)$weight = E(net.past)$weight - (min(E(net.past)$weight)) + 0.01
+# Compute centrality measures for the 'never' network
+never_degree <- degree(net.never)
+never_betweenness <- betweenness(net.never)
+never_closeness <- closeness(net.never)
+
+# Compute centrality measures for the 'recent' network
+recent_degree <- degree(net.recent)
+recent_betweenness <- betweenness(net.recent)
+recent_closeness <- closeness(net.recent)
+
+# Compute centrality measures for the 'past' network
+past_degree <- degree(net.past)
+past_betweenness <- betweenness(net.past)
+past_closeness <- closeness(net.past)
+```
+
+```{r}
+# Plot degree centrality
+boxplot(never_degree, recent_degree, past_degree, 
+        names = c("Never", "Recent", "Past"), 
+        main = "Degree Centrality", 
+        ylab = "Degree")
+
+# Plot betweenness centrality
+boxplot(never_betweenness, recent_betweenness, past_betweenness, 
+        names = c("Never", "Recent", "Past"), 
+        main = "Betweenness Centrality", 
+        ylab = "Betweenness")
+
+# Plot closeness centrality
+boxplot(never_closeness, recent_closeness, past_closeness, 
+        names = c("Never", "Recent", "Past"), 
+        main = "Closeness Centrality", 
+        ylab = "Closeness")
+
+```
+
+```{r}
+# Identify top nodes by degree centrality in the 'never' network
+top_degree_never <- names(sort(never_degree, decreasing = TRUE))[1:10]
+
+# Identify top nodes by betweenness centrality in the 'recent' network
+top_betweenness_recent <- names(sort(recent_betweenness, decreasing = TRUE))[1:10]
+
+# Identify top nodes by closeness centrality in the 'past' network
+top_closeness_past <- names(sort(past_closeness, decreasing = TRUE))[1:10]
+
+top_degree_never
+top_betweenness_recent
+top_closeness_past
+```
