@@ -181,14 +181,29 @@ V(past.glasso)[degree(past.glasso) == 0]$clu <- "999"
 
 Plot the network for Glasso method
 
+Here is the function to create a plot.
+
+```{r}
+# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
+plot_network = function(net, title, filter){
+    network = ggraph(net, layout = "fr") +
+    geom_edge_link0(color = "grey66") +
+    geom_node_point(aes(fill = clu, size = size), shape = 21) +
+    geom_node_text(aes(filter = size > filter, label = name), family = "serif", repel = TRUE) +
+    scale_edge_width(range = c(0.2, 3)) +
+    scale_size(range = c(1, 6)) +
+    labs(title = title)
+
+    return(network)
+}
+```
+
 ```{r}
 # plot the network for glasso
-ggraph(never.glasso, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+
+#never
+plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
+plot.never.glasso
 
 # find out largest cluster in glasso and create subgraph
 mem.never.glasso = membership(cluster_louvain(never.glasso))
@@ -197,20 +212,12 @@ largest_cluster.never.glasso = names(cluster.never.glasso)[which.max(cluster.nev
 subvertice.never.glasso = which(mem.never.glasso == largest_cluster.never.glasso)
 
 subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
-ggraph(subgraph.never.glasso, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
+subplot.never.glasso
 
 # recent
-ggraph(recent.glasso, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
+plot.recent.glasso
 
 mem.recent.glasso = membership(cluster_louvain(recent.glasso))
 cluster.recent.glasso = table(mem.recent.glasso)
@@ -218,20 +225,12 @@ largest_cluster.recent.glasso = names(cluster.recent.glasso)[which.max(cluster.r
 subvertice.recent.glasso = which(mem.recent.glasso == largest_cluster.recent.glasso)
 
 subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glasso)
-ggraph(subgraph.recent.glasso, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
+subplot.recent.glasso
 
 # past
-ggraph(past.glasso, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
+plot.past.glasso
 
 mem.past.glasso = membership(cluster_louvain(past.glasso))
 cluster.past.glasso = table(mem.past.glasso)
@@ -239,12 +238,8 @@ largest_cluster.past.glasso = names(cluster.past.glasso)[which.max(cluster.past.
 subvertice.past.glasso = which(mem.past.glasso == largest_cluster.past.glasso)
 
 subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
-ggraph(subgraph.past.glasso, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
+subplot.past.glasso
 ```
 
 
@@ -274,12 +269,8 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 # plot the network for dissimilarity
 
 # never
-ggraph(never.diss, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.never.diss = plot_network(never.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.never.diss
 
 mem.never.diss = membership(cluster_louvain(never.diss))
 cluster.never.diss = table(mem.never.diss)
@@ -287,20 +278,12 @@ largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.d
 subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
 
 subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
-ggraph(subgraph.never.diss, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.never.diss
 
 # recnt
-ggraph(recent.diss, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.recent.diss
 
 mem.recent.diss = membership(cluster_louvain(recent.diss))
 cluster.recent.diss = table(mem.recent.diss)
@@ -308,20 +291,12 @@ largest_cluster.recent.diss = names(cluster.recent.diss)[which.max(cluster.recen
 subvertice.recent.diss = which(mem.recent.diss == largest_cluster.recent.diss)
 
 subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
-ggraph(subgraph.recent.diss, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.recent.diss
 
 # past
-ggraph(past.diss, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.past.diss
 
 mem.past.diss = membership(cluster_louvain(past.diss))
 cluster.past.diss = table(mem.past.diss)
@@ -329,12 +304,8 @@ largest_cluster.past.diss = names(cluster.past.diss)[which.max(cluster.past.diss
 subvertice.past.diss = which(mem.past.diss == largest_cluster.past.diss)
 
 subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
-ggraph(subgraph.past.diss, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.past.diss
 ```
 
 Plot the network - correlation
@@ -363,12 +334,8 @@ V(past.corr)[degree(past.corr) == 0]$clu <- "999"
 #Plot the network for correlation
 
 #never
-ggraph(never.corr, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
+plot.never.corr
 
 mem.never.corr = membership(cluster_louvain(never.corr))
 cluster.never.corr = table(mem.never.corr)
@@ -376,20 +343,12 @@ largest_cluster.never.corr = names(cluster.never.corr)[which.max(cluster.never.c
 subvertice.never.corr = which(mem.never.corr == largest_cluster.never.corr)
 
 subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
-ggraph(subgraph.never.corr, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
+subplot.never.corr
 
 # recent
-ggraph(recent.corr, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
+plot.recent.corr
 
 mem.recent.corr = membership(cluster_louvain(recent.corr))
 cluster.recent.corr = table(mem.recent.corr)
@@ -397,21 +356,13 @@ largest_cluster.recent.corr = names(cluster.recent.corr)[which.max(cluster.recen
 subvertice.recent.corr = which(mem.recent.corr == largest_cluster.recent.corr)
 
 subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
-ggraph(subgraph.recent.corr, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
+subplot.recent.corr
 
 #past
 
-ggraph(past.corr, layout = "fr") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 99, label = name), family = "serif") +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
+plot.past.corr
 
 mem.past.corr = membership(cluster_louvain(past.corr))
 cluster.past.corr = table(mem.past.corr)
@@ -419,12 +370,57 @@ largest_cluster.past.corr = names(cluster.past.corr)[which.max(cluster.past.corr
 subvertice.past.corr = which(mem.past.corr == largest_cluster.past.corr)
 
 subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
-ggraph(subgraph.past.corr, layout = "nicely") +
-  geom_edge_link0(color = "grey66") +
-  geom_node_point(aes(fill = clu, size = size), shape = 21) +
-  geom_node_text(aes(filter = size > 1, label = name), family = "serif", repel = TRUE) +
-  scale_edge_width(range = c(0.2, 3)) +
-  scale_size(range = c(1, 6))
+subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
+subplot.past.corr
 ```
 
+Combined Graph
 
+```{r}
+# get the edge list for never graph
+never.glasso.edge = get.edgelist(never.glasso)
+never.diss.edge = get.edgelist(never.diss)
+never.corr.edge = get.edgelist(never.corr)
+
+#standardize the edge list
+never.glasso.edge = t(apply(never.glasso.edge, 1, sort))
+never.diss.edge = t(apply(never.diss.edge, 1, sort))
+never.corr.edge = t(apply(never.corr.edge, 1, sort))
+
+# convert to dataframe
+never.glasso.edge_df = as.data.frame(never.glasso.edge)
+never.diss.edge_df = as.data.frame(never.diss.edge)
+never.corr.edge_df = as.data.frame(never.corr.edge)
+
+# find intersection and unions
+library(dplyr)
+
+edges_in_all_3_never = intersect(intersect(never.glasso.edge_df, never.diss.edge_df), never.corr.edge_df)
+
+edge_lasso_diss_never = intersect(never.glasso.edge_df, never.diss.edge_df)
+edge_lasso_corr_never = intersect(never.glasso.edge_df, never.corr.edge_df)
+edge_diss_corr_never = intersect(never.diss.edge_df, never.corr.edge_df)
+
+edges_in_2_never = unique(rbind(edge_lasso_corr_never, edge_lasso_diss_never, edge_diss_corr_never))
+edges_in_2_never = setdiff(edges_in_2_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
+
+edges_in_1_never <- unique(rbind(never.glasso.edge_df, never.corr.edge_df, never.diss.edge_df))
+edges_in_1_never <- setdiff(edges_in_1_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
+edges_in_1_never <- setdiff(edges_in_1_never, edges_in_2_never)  # Exclude edges that are in exactly 2 networks
+
+
+```
+
+Combined Graph for never
+```{r}
+#initialize empty graph
+combined_graph.never = graph.empty(directed = FALSE, n = vcount(never.glasso))
+
+# add edges
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_all_3_never)), weight = 3)
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_2_never)), weight = 2)
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_1_never)), weight = 1)
+
+# plot
+
+```
