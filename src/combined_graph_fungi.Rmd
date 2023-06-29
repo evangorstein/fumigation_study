@@ -34,23 +34,23 @@ Read in the data
 
 ```{r}
 samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
-bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
 ```
 
 Data Preprocessing
     
 ```{r}
 # Aggregate based on families. Choose to look at family OTU.
-fam.df = bac_abundance %>% 
-  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
-  group_by(Family) %>%
+genus.df = fung_abundance %>% 
+  mutate(Genus = fct_na_value_to_level(Genus, "Unknown_Genus")) %>% #Missing values included in Unknown_Family level
+  group_by(Genus) %>%
   summarise(across(starts_with("Samp"), sum)) 
 
-fams = fam.df$Family
-fam.mat = as.matrix(fam.df[,-1])
-rownames(fam.mat) = fams
-fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
-fam.mat = t(fam.mat)
+genus = genus.df$Genus
+genus.mat = as.matrix(genus.df[,-1])
+rownames(genus.mat) = genus
+genus.mat = genus.mat[rownames(genus.mat)!="Unknown_Genus",]
+genus.mat = t(genus.mat)
 
 # add sample number to metadata for each samples.
 samp_metadata = samp_metadata %>%
@@ -71,9 +71,9 @@ recent = samp_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
 past = samp_metadata %>% filter(fumigation == "past") %>% pull(sample_name)
 
 # create 3 different matrix for 3 fumigation time
-fam.mat.never = fam.mat[never,]
-fam.mat.recent = fam.mat[recent,]
-fam.mat.past = fam.mat[past,]
+genus.mat.never = genus.mat[never,]
+genus.mat.recent = genus.mat[recent,]
+genus.mat.past = genus.mat[past,]
 ```
 
 Function for data analysis
@@ -141,9 +141,9 @@ Plot the network - Glasso
 
 ```{r}
 # first get transformed matrix
-never.mat = create_matrix(fam.mat.never)
-recent.mat = create_matrix(fam.mat.recent)
-past.mat = create_matrix(fam.mat.past)
+never.mat = create_matrix(genus.mat.never)
+recent.mat = create_matrix(genus.mat.recent)
+past.mat = create_matrix(genus.mat.past)
 
 never.glasso = glasso_net(never.mat, 0.75)
 recent.glasso = glasso_net(recent.mat, 0.75)
@@ -246,9 +246,9 @@ subplot.past.glasso
 Plot the dissimilarity network
 
 ```{r}
-never.diss = dis_net(fam.mat.never, 0.5)
-recent.diss = dis_net(fam.mat.recent, 0.5)
-past.diss = dis_net(fam.mat.past, 0.5)
+never.diss = dis_net(genus.mat.never, 0.5)
+recent.diss = dis_net(genus.mat.recent, 0.5)
+past.diss = dis_net(genus.mat.past, 0.5)
 
 #compute clustering
 V(never.diss)$clu = as.character(membership(cluster_louvain(never.diss)))
@@ -311,9 +311,9 @@ subplot.past.diss
 Plot the network - correlation
 
 ```{r}
-never.corr = corr_net(fam.mat.never, 0.75)
-recent.corr = corr_net(fam.mat.recent, 0.75)
-past.corr = corr_net(fam.mat.past, 0.75)
+never.corr = corr_net(genus.mat.never, 0.75)
+recent.corr = corr_net(genus.mat.recent, 0.75)
+past.corr = corr_net(genus.mat.past, 0.75)
 
 # compute clustering
 V(never.corr)$clu = as.character(membership(cluster_louvain(never.corr)))
