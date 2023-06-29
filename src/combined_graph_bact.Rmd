@@ -375,7 +375,9 @@ subplot.past.corr
 ```
 
 Combined Graph
-
+```{r}
+library(dplyr)
+```
 ```{r}
 # get the edge list for never graph
 never.glasso.edge = get.edgelist(never.glasso)
@@ -393,8 +395,6 @@ never.diss.edge_df = as.data.frame(never.diss.edge)
 never.corr.edge_df = as.data.frame(never.corr.edge)
 
 # find intersection and unions
-library(dplyr)
-
 edges_in_all_3_never = intersect(intersect(never.glasso.edge_df, never.diss.edge_df), never.corr.edge_df)
 
 edge_lasso_diss_never = intersect(never.glasso.edge_df, never.diss.edge_df)
@@ -404,23 +404,177 @@ edge_diss_corr_never = intersect(never.diss.edge_df, never.corr.edge_df)
 edges_in_2_never = unique(rbind(edge_lasso_corr_never, edge_lasso_diss_never, edge_diss_corr_never))
 edges_in_2_never = setdiff(edges_in_2_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
 
-edges_in_1_never <- unique(rbind(never.glasso.edge_df, never.corr.edge_df, never.diss.edge_df))
-edges_in_1_never <- setdiff(edges_in_1_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
-edges_in_1_never <- setdiff(edges_in_1_never, edges_in_2_never)  # Exclude edges that are in exactly 2 networks
+edges_in_1_never = unique(rbind(never.glasso.edge_df, never.corr.edge_df, never.diss.edge_df))
+edges_in_1_never = setdiff(edges_in_1_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
+edges_in_1_never = setdiff(edges_in_1_never, edges_in_2_never)  # Exclude edges that are in exactly 2 networks
 
-
+# identify missing taxa 
+all_taxa.never = unique(c(V(never.glasso)$name, V(never.diss)$name, V(never.corr)$name))
+combined_edges_df.never = rbind(edges_in_all_3_never, edges_in_2_never, edges_in_1_never)
 ```
 
 Combined Graph for never
 ```{r}
 #initialize empty graph
-combined_graph.never = graph.empty(directed = FALSE, n = vcount(never.glasso))
+combined_graph.never = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.never = add_vertices(combined_graph.never, length(all_taxa.never), name = all_taxa.never)
 
 # add edges
 combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_all_3_never)), weight = 3)
 combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_2_never)), weight = 2)
 combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_1_never)), weight = 1)
 
-# plot
+# add weight to edges
+combined_edges_df.never$weight = c(rep(3, nrow(edges_in_all_3_never)), rep(2, nrow(edges_in_2_never)), rep(1, nrow(edges_in_1_never)))
+E(combined_graph.never)$weight = combined_edges_df.never$weight
+V(combined_graph.never)$size = degree(combined_graph.never)
+```
 
+
+```{r}
+# Plot the first graph for never fumigated samples.
+ggraph(combined_graph.never, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Never Fumigated Samples")
+```
+
+Combined Graph for Recent Network
+
+```{r}
+# get the edge list for recent graph
+recent.glasso.edge = get.edgelist(recent.glasso)
+recent.diss.edge = get.edgelist(recent.diss)
+recent.corr.edge = get.edgelist(recent.corr)
+
+#standardize the edge list
+recent.glasso.edge = t(apply(recent.glasso.edge, 1, sort))
+recent.diss.edge = t(apply(recent.diss.edge, 1, sort))
+recent.corr.edge = t(apply(recent.corr.edge, 1, sort))
+
+# convert to dataframe
+recent.glasso.edge_df = as.data.frame(recent.glasso.edge)
+recent.diss.edge_df = as.data.frame(recent.diss.edge)
+recent.corr.edge_df = as.data.frame(recent.corr.edge)
+
+# find intersection and unions
+edges_in_all_3_recent = intersect(intersect(recent.glasso.edge_df, recent.diss.edge_df), recent.corr.edge_df)
+
+edge_lasso_diss_recent = intersect(recent.glasso.edge_df, recent.diss.edge_df)
+edge_lasso_corr_recent = intersect(recent.glasso.edge_df, recent.corr.edge_df)
+edge_diss_corr_recent = intersect(recent.diss.edge_df, recent.corr.edge_df)
+
+edges_in_2_recent = unique(rbind(edge_lasso_corr_recent, edge_lasso_diss_recent, edge_diss_corr_recent))
+edges_in_2_recent = setdiff(edges_in_2_recent, edges_in_all_3_recent)  # Exclude edges that are in all 3 networks
+
+edges_in_1_recent = unique(rbind(recent.glasso.edge_df, recent.corr.edge_df, recet.diss.edge_df))
+edges_in_1_recent = setdiff(edges_in_1_recent, edges_in_all_3_recent)  # Exclude edges that are in all 3 networks
+edges_in_1_recent = setdiff(edges_in_1_recent, edges_in_2_recent)  # Exclude edges that are in exactly 2 networks
+
+# identify missing taxa 
+all_taxa.recent = unique(c(V(recent.glasso)$name, V(recent.diss)$name, V(recent.corr)$name))
+combined_edges_df.recent = rbind(edges_in_all_3_recent, edges_in_2_recent, edges_in_1_recent)
+```
+
+```{r}
+#initialize empty graph
+combined_graph.recent = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.recent = add_vertices(combined_graph.recent, length(all_taxa.recent), name = all_taxa.recent)
+
+# add edges
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_all_3_recent)), weight = 3)
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_2_recent)), weight = 2)
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_1_recent)), weight = 1)
+
+# add weight to edges
+combined_edges_df.recent$weight = c(rep(3, nrow(edges_in_all_3_recent)), rep(2, nrow(edges_in_2_recent)), rep(1, nrow(edges_in_1_recent)))
+E(combined_graph.recent)$weight = combined_edges_df.recent$weight
+V(combined_graph.recent)$size = degree(combined_graph.recent)
+```
+
+```{r}
+# Plot the first graph for recent fumigated samples.
+ggraph(combined_graph.recent, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Recent Fumigated Samples")
+```
+
+Combined Graph for Past Network
+
+```{r}
+# get the edge list for past graph
+past.glasso.edge = get.edgelist(past.glasso)
+past.diss.edge = get.edgelist(past.diss)
+past.corr.edge = get.edgelist(past.corr)
+
+#standardize the edge list
+past.glasso.edge = t(apply(past.glasso.edge, 1, sort))
+past.diss.edge = t(apply(past.diss.edge, 1, sort))
+past.corr.edge = t(apply(past.corr.edge, 1, sort))
+
+# convert to dataframe
+past.glasso.edge_df = as.data.frame(past.glasso.edge)
+past.diss.edge_df = as.data.frame(past.diss.edge)
+past.corr.edge_df = as.data.frame(past.corr.edge)
+
+# find intersection and unions
+edges_in_all_3_past = intersect(intersect(past.glasso.edge_df, past.diss.edge_df), past.corr.edge_df)
+
+edge_lasso_diss_past = intersect(past.glasso.edge_df, past.diss.edge_df)
+edge_lasso_corr_past = intersect(past.glasso.edge_df, past.corr.edge_df)
+edge_diss_corr_past = intersect(past.diss.edge_df, past.corr.edge_df)
+
+edges_in_2_past = unique(rbind(edge_lasso_corr_past, edge_lasso_diss_past, edge_diss_corr_past))
+edges_in_2_past = setdiff(edges_in_2_past, edges_in_all_3_past)  # Exclude edges that are in all 3 networks
+
+edges_in_1_past = unique(rbind(past.glasso.edge_df, past.corr.edge_df, past.diss.edge_df))
+edges_in_1_past = setdiff(edges_in_1_past, edges_in_all_3_past)  # Exclude edges that are in all 3 networks
+edges_in_1_past = setdiff(edges_in_1_past, edges_in_2_past)  # Exclude edges that are in exactly 2 networks
+
+# identify missing taxa 
+all_taxa.past = unique(c(V(past.glasso)$name, V(past.diss)$name, V(past.corr)$name))
+combined_edges_df.past = rbind(edges_in_all_3_past, edges_in_2_past, edges_in_1_past)
+```
+
+```{r}
+#initialize empty graph
+combined_graph.past = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.past = add_vertices(combined_graph.past, length(all_taxa.past), name = all_taxa.past)
+
+# add edges
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_all_3_past)), weight = 3)
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_2_past)), weight = 2)
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_1_past)), weight = 1)
+
+# add weight to edges
+combined_edges_df.past$weight = c(rep(3, nrow(edges_in_all_3_past)), rep(2, nrow(edges_in_2_past)), rep(1, nrow(edges_in_1_past)))
+E(combined_graph.past)$weight = combined_edges_df.past$weight
+V(combined_graph.past)$size = degree(combined_graph.past)
+```
+
+```{r}
+# Plot the first graph for past fumigated samples.
+ggraph(combined_graph.past, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Past Fumigated Samples")
 ```
