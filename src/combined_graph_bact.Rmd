@@ -28,6 +28,8 @@ library(ggraph)
 library(networkdata)
 library(graphlayouts)
 library(ggforce)
+library(ggplot2)
+library(CARlasso)
 ```
 
 Read in the data
@@ -443,6 +445,18 @@ ggraph(combined_graph.never, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Never Fumigated Samples")
+
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+ggraph(subgraph.never, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  theme_graph() +
+  ggtitle("Edges Present in All Three Networks for Never Fumigated Samples")
 ```
 
 Combined Graph for Recent Network
@@ -510,6 +524,18 @@ ggraph(combined_graph.recent, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples")
+
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+ggraph(subgraph.recent, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  theme_graph() +
+  ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
 ```
 
 Combined Graph for Past Network
@@ -577,4 +603,249 @@ ggraph(combined_graph.past, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Past Fumigated Samples")
+
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+ggraph(subgraph.past, layout = "fr") +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(shape = 21) +
+  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  theme_graph() +
+  ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
 ```
+
+
+Identify Different nodes/taxas in 3 network.
+
+```{r}
+# degree centrality
+degree.never = degree(combined_graph.never)
+degree.recent = degree(combined_graph.recent)
+degree.past = degree(combined_graph.past)
+
+# betweness
+betweenness.never = betweenness(combined_graph.never)
+betweenness.recent = betweenness(combined_graph.recent)
+betweenness.past = betweenness(combined_graph.past)
+
+degree_df = data.frame(
+  names = names(V(combined_graph.never)),
+  degree.never = degree.never,
+  degree.recent = degree.recent,
+  degree.past = degree.past
+)
+```
+
+3 plot showing the distribution of degrees.
+
+```{r}
+ggplot(degree_df, aes(x= degree.never, y = degree.recent)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Never Fumigated Samples", y = "Degree in Recent Fumigated Samples") +
+  ggtitle("Degree Distribution for Never and Recent Fumigated Samples") +
+  theme_minimal()
+
+ggplot(degree_df, aes(x= degree.never, y = degree.past)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Never Fumigated Samples", y = "Degree in Past Fumigated Samples") +
+  ggtitle("Degree Distribution for Never and Past Fumigated Samples") +
+  theme_minimal()
+
+ggplot(degree_df, aes(x= degree.recent, y = degree.past)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Recent Fumigated Samples", y = "Degree in Past Fumigated Samples") +
+  ggtitle("Degree Distribution for Recent and Past Fumigated Samples") +
+  theme_minimal()
+```
+
+Let's find the 20 most different one.
+
+```{r}
+degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
+betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
+
+difference_df = data.frame(
+  names = names(degree_difference),
+  degree_difference = degree_difference,
+  betweeness_difference = betweeness_difference
+)
+
+difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
+
+difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
+
+top_20 = difference_df[1:20,]
+```
+
+Here is the names of the top 20 different nodes.
+
+```{r}
+top_20$names
+```
+
+Comparing network as a whole on degree and betweness.
+
+```{r}
+# calculate degree and betweenness for each network
+glasso.degree.never = degree(never.glasso)
+glasso.degree.recent = degree(recent.glasso)
+glasso.degree.past = degree(past.glasso)
+
+glasso.betweenness.never = betweenness(never.glasso)
+glasso.betweenness.recent = betweenness(recent.glasso)
+glasso.betweenness.past = betweenness(past.glasso)
+
+diss.degree.never = degree(never.diss)
+diss.degree.recent = degree(recent.diss)
+diss.degree.past = degree(past.diss)
+
+diss.betweenness.never = betweenness(never.diss)
+diss.betweenness.recent = betweenness(recent.diss)
+diss.betweenness.past = betweenness(past.diss)
+
+corr.degree.never = degree(never.corr)
+corr.degree.recent = degree(recent.corr)
+corr.degree.past = degree(past.corr)
+
+corr.betweenness.never = betweenness(never.corr)
+corr.betweenness.recent = betweenness(recent.corr)
+corr.betweenness.past = betweenness(past.corr)
+```
+
+
+Here is boxplot for overall combined graph.
+
+```{r}
+boxplot(
+  degree.never, degree.recent, degree.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Degree Distribution for Combined Graph",
+  ylab = "Degree"
+)
+
+boxplot(
+  betweenness.never, betweenness.recent, betweenness.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Betweenness Distribution for Combined Graph",
+  ylab = "Betweenness"
+)
+```
+
+Glasso
+```{r}
+boxplot(
+  glasso.degree.never, glasso.degree.recent, glasso.degree.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Degree Distribution for Glasso Network",
+  ylab = "Degree"
+)
+
+boxplot(
+  glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Betweenness Distribution for Glasso Network",
+  ylab = "Betweenness"
+)
+```
+
+Dissimilarity
+```{r}
+boxplot(
+  diss.degree.never, diss.degree.recent, diss.degree.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Degree Distribution for Dissimilarity Network",
+  ylab = "Degree"
+)
+
+boxplot(
+  diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Betweenness Distribution for Dissimilarity Network",
+  ylab = "Betweenness"
+)
+```
+
+Correlation
+```{r}
+boxplot(
+  corr.degree.never, corr.degree.recent, corr.degree.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Degree Distribution for Correlation Network",
+  ylab = "Degree"
+)
+
+boxplot(
+  corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past,
+  names = c("Never", "Recent", "Past"),
+  main = "Betweenness Distribution for Correlation Network",
+  ylab = "Betweenness"
+)
+```
+
+TODO: we can also compare GDV in future.
+
+Now, we fit carlasso model to 20 taxas.
+
+```{r}
+never_fumigated = samp_metadata %>% 
+  filter(fumigation == "never") %>%
+  pull(sample_name)
+
+recent_fumigated = samp_metadata %>%
+  filter(fumigation == "recent") %>%
+  pull(sample_name)
+
+past_fumigated = samp_metadata %>%
+  filter(fumigation == "past") %>%
+  pull(sample_name)
+
+fam_df = as.data.frame(fam.mat)
+fam_df = fam_df %>%
+  mutate(sample_name = rownames(fam_df)) %>%
+  mutate(fumigation_status = case_when(
+    sample_name %in% never_fumigated ~ "never",
+    sample_name %in% recent_fumigated ~ "recent",
+    sample_name %in% past_fumigated ~ "past"
+  ))
+fam_df$Treatment = samp_metadata$Treatment
+
+otus = top_20$names
+otu_quoted = paste0("`", otus, "`")
+formula = paste(otu_quoted, collapse = "+")
+formula_both = paste(formula, "~ fumigation_status+Treatment")
+formula_both = as.formula(formula_both)
+```
+
+Run CARlasso
+
+```{r}
+response = CARlasso(formula_both, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response.horse = horseshoe(response)
+```
+
+```{r}
+plot(response.horse)
+```
+
+CARlasso for only single response
+
+```{r}
+formula_single = paste(formula, "~ fumigation_status")
+formula_single = as.formula(formula_single)
+```
+
+```{r}
+response2 = CARlasso(formula_single, data = fam_df, link = "logit", adaptive = TRUE)
+response2.horse = horseshoe(response2)
+plot(response2.horse)
+```
+
