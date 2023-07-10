@@ -122,6 +122,7 @@ glasso_net = function(mat, rho){
 
 # function for dissimilarity matrix
 dis_net = function(mat, cutoff){
+  # TODO: considering normalizing the data?
     diss.mat = as.matrix(vegdist(t(mat)), method = "bray")
     diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
     net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
@@ -191,7 +192,7 @@ plot_network = function(net, title, filter){
     network = ggraph(net, layout = "fr") +
     geom_edge_link0(color = "grey66") +
     geom_node_point(aes(fill = clu, size = size), shape = 21) +
-    geom_node_text(aes(filter = size > filter, label = name), family = "serif", repel = TRUE) +
+    geom_node_text(aes(filter = size > filter, label = name, size = degree(net)), family = "serif", repel = TRUE, show.legend = FALSE) +
     scale_edge_width(range = c(0.2, 3)) +
     scale_size(range = c(1, 6)) +
     labs(title = title)
@@ -271,7 +272,7 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 # plot the network for dissimilarity
 
 # never
-plot.never.diss = plot_network(never.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.never.diss
 
 mem.never.diss = membership(cluster_louvain(never.diss))
@@ -280,7 +281,7 @@ largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.d
 subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
 
 subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
-subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.never.diss
 
 # recnt
@@ -438,9 +439,10 @@ V(combined_graph.never)$size = degree(combined_graph.never)
 ```{r}
 # Plot the first graph for never fumigated samples.
 ggraph(combined_graph.never, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
-  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
+  geom_edge_link0(aes(edge_color = as.factor(weight),edge_alpha = weight), show.legend = TRUE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks"), guide = guide_legend(override.aes = list(alpha = 1))) +
+   scale_alpha_continuous(guide = "none") +
+  geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
@@ -451,12 +453,12 @@ subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[we
 
 # plot the subgraph
 ggraph(subgraph.never, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
-  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.never)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
-  ggtitle("Edges Present in All Three Networks for Never Fumigated Samples")
+  ggtitle("Edges in All Three Networks for Never Fumigated")
 ```
 
 Combined Graph for Recent Network
@@ -519,7 +521,7 @@ V(combined_graph.recent)$size = degree(combined_graph.recent)
 ggraph(combined_graph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
+  geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
@@ -530,10 +532,10 @@ subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)
 
 # plot the subgraph
 ggraph(subgraph.recent, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
-  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.recent)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
 ```
@@ -598,7 +600,7 @@ V(combined_graph.past)$size = degree(combined_graph.past)
 ggraph(combined_graph.past, layout = "fr") +
   geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
+    geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
@@ -609,10 +611,10 @@ subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weigh
 
 # plot the subgraph
 ggraph(subgraph.past, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
+  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
-  geom_node_point(shape = 21) +
-  geom_node_text(aes(filter = size >= 25, label = name), family = "serif", repel = TRUE) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.past)), family = "serif", repel = TRUE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
 ```
@@ -664,30 +666,7 @@ ggplot(degree_df, aes(x= degree.recent, y = degree.past)) +
   theme_minimal()
 ```
 
-Let's find the 20 most different one.
 
-```{r}
-degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
-betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
-
-difference_df = data.frame(
-  names = names(degree_difference),
-  degree_difference = degree_difference,
-  betweeness_difference = betweeness_difference
-)
-
-difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
-
-difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
-
-top_20 = difference_df[1:20,]
-```
-
-Here is the names of the top 20 different nodes.
-
-```{r}
-top_20$names
-```
 
 Comparing network as a whole on degree and betweness.
 
@@ -790,6 +769,31 @@ boxplot(
 
 TODO: we can also compare GDV in future.
 
+Let's find the 20 most different one.
+
+```{r}
+degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
+betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
+
+difference_df = data.frame(
+  names = names(degree_difference),
+  degree_difference = degree_difference,
+  betweeness_difference = betweeness_difference
+)
+
+difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
+
+difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
+
+top_20 = difference_df[1:20,]
+```
+
+Here is the names of the top 20 different nodes.
+
+```{r}
+top_20$names
+```
+
 Now, we fit carlasso model to 20 taxas.
 
 ```{r}
@@ -849,3 +853,30 @@ response2.horse = horseshoe(response2)
 plot(response2.horse)
 ```
 
+CARlasso on top 10 most different taxa.
+
+```{r}
+top10 = difference_df[1:10,]
+otus10 = top10$names
+otu_quoted10 = paste0("`", otus10, "`")
+formula10 = paste(otu_quoted10, collapse = "+")
+formula_both10 = paste(formula10, "~ fumigation_status+Treatment")
+formula_both10 = as.formula(formula_both10)
+```
+
+```{r}
+response10 = CARlasso(formula_both10, data = fam_df, link = "logit", adaptive = TRUE)
+response10.horse = horseshoe(response10)
+plot(response10.horse)
+```
+
+```{r}
+formula_single10 = paste(formula10, "~ fumigation_status")
+formula_single10 = as.formula(formula_single10)
+```
+
+```{r}
+response10_2 = CARlasso(formula_single10, data = fam_df, link = "logit", adaptive = TRUE)
+response10_2.horse = horseshoe(response10_2)
+plot(response10_2.horse)
+```
