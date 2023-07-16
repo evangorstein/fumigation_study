@@ -30,6 +30,7 @@ library(graphlayouts)
 library(ggforce)
 library(ggplot2)
 library(CARlasso)
+library(viridis)
 ```
 
 Read in the data
@@ -192,9 +193,10 @@ plot_network = function(net, title, filter){
     network = ggraph(net, layout = "fr") +
     geom_edge_link0(color = "grey66") +
     geom_node_point(aes(fill = clu, size = size), shape = 21) +
-    geom_node_text(aes(filter = size > filter, label = name, size = degree(net)), family = "serif", repel = TRUE, show.legend = FALSE) +
+    geom_node_text(aes(filter = size > filter, label = name, size = ifelse(degree(net) > 15, degree(net), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
     scale_edge_width(range = c(0.2, 3)) +
     scale_size(range = c(1, 6)) +
+    scale_fill_viridis(discrete = TRUE, option = "viridis") +
     labs(title = title)
 
     return(network)
@@ -379,9 +381,6 @@ subplot.past.corr
 
 Combined Graph
 ```{r}
-library(dplyr)
-```
-```{r}
 # get the edge list for never graph
 never.glasso.edge = get.edgelist(never.glasso)
 never.diss.edge = get.edgelist(never.diss)
@@ -439,9 +438,10 @@ V(combined_graph.never)$size = degree(combined_graph.never)
 ```{r}
 # Plot the first graph for never fumigated samples.
 ggraph(combined_graph.never, layout = "fr") +
-  geom_edge_link0(aes(edge_color = as.factor(weight),edge_alpha = weight), show.legend = TRUE) +
-  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks"), guide = guide_legend(override.aes = list(alpha = 1))) +
-   scale_alpha_continuous(guide = "none") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
   geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
@@ -453,10 +453,10 @@ subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[we
 
 # plot the subgraph
 ggraph(subgraph.never, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.never)), family = "serif", repel = TRUE, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges in All Three Networks for Never Fumigated")
 ```
@@ -519,23 +519,24 @@ V(combined_graph.recent)$size = degree(combined_graph.recent)
 ```{r}
 # Plot the first graph for recent fumigated samples.
 ggraph(combined_graph.recent, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
-  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
   geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples")
-
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
 ggraph(subgraph.recent, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.recent)), family = "serif", repel = TRUE, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
 ```
@@ -598,9 +599,11 @@ V(combined_graph.past)$size = degree(combined_graph.past)
 ```{r}
 # Plot the first graph for past fumigated samples.
 ggraph(combined_graph.past, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = TRUE) +
-  scale_edge_color_discrete("Edge\nWeight", labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
-    geom_node_point(shape = 19, size = 1) +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 19, size = 1) +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
@@ -611,10 +614,10 @@ subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weigh
 
 # plot the subgraph
 ggraph(subgraph.past, layout = "fr") +
-  geom_edge_link0(aes(edge_alpha = weight, edge_color = as.factor(weight)), show.legend = FALSE) +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = degree(subgraph.past)), family = "serif", repel = TRUE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), family = "serif", repel = TRUE, show.legend =  FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
 ```
@@ -880,3 +883,11 @@ response10_2 = CARlasso(formula_single10, data = fam_df, link = "logit", adaptiv
 response10_2.horse = horseshoe(response10_2)
 plot(response10_2.horse)
 ```
+
+Investigation
+```{r}
+r2.data = response2.horse$point_est$CAR$C
+r210.data = response10_2.horse$point_est$CAR$C
+```
+
+Appears CARlasso on a subset of taxa's result is different than the whole set.
