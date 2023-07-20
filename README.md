@@ -7,3 +7,5 @@ Analysis of microbial data from a study of the effect of fumigation in golf cour
 - `bact_anal.R` fits microbial networks to bacteria data.
 
 - `fung_anal.R` fits microbial networks to fungal data.
+
+- `src` contains all the analysis code.
