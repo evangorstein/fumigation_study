@@ -194,6 +194,42 @@ permanova_result_treatment_3 = adonis2(dist_matrix_6 ~ Treatment, data = sample_
 permanova_result_treatment_3 
 ```
 
+## Permanova for Time
+
+First, filter out only sample with past fumigation status.
+```{r}
+sample_past = sample_metadata %>%
+  filter(fumigation == "past")
+
+sample_past_id = sample_past %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+fam.mat.past = fam.mat[rownames(fam.mat) %in% sample_past_id, ]
+fam.mat.filt.past = fam.mat.filt[rownames(fam.mat.filt) %in% sample_past_id, ]
+fam.mat.harsh.past = fam.mat.harsh[rownames(fam.mat.harsh) %in% sample_past_id, ]
+```
+
+Running Permanova analysis to see if time has any effect on the relative abundance of microbes in the soil.
+```{r}
+dist_matrix_time_1 = vegdist(fam.mat.past, method = "bray")
+dist_matrix_time_2 = vegdist(fam.mat.filt.past, method = "bray")
+dist_matrix_time_3 = vegdist(fam.mat.harsh.past, method = "bray")
+
+# 1 - all families without filtering
+permanova_result_time_1 = adonis2(dist_matrix_time_1 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_1
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_time_2 = adonis2(dist_matrix_time_2 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_2
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_time_3 = adonis2(dist_matrix_time_3 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_3
+```
+
 
 ## Obervations
 By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status.
@@ -254,6 +290,16 @@ permanova_result_species_2 = adonis2(dist_matrix_species_2 ~ Treatment, data = s
 permanova_result_species_2
 ```
 
+
+## Permanova for Time
+
+```{r}
+species.mat.time = species.mat[rownames(species.mat) %in% sample_past_id, ]
+dist_matrix_species_3 = vegdist(species.mat.time, method = "bray")
+
+permanova_result_species_3 = adonis2(dist_matrix_species_3 ~ Time, data = sample_past, permutations = 999)
+permanova_result_species_3
+```
 
 ## Obervations
 By using library sum normalization and bray distance method, the PERMANOVA analysis shows that there is a statistical significant evidence  ($P(F^p > F) < 0.001$) in the relative abundance of microbes in the soil is different based on the fumigation status, when looking at species level.
@@ -436,6 +482,43 @@ permanova_result_treatment_fun_3 = adonis2(dist_matrix_fun_6 ~ Treatment, data =
 permanova_result_treatment_fun_3 
 ```
 
+## Permanova for Time
+
+First, filter out only sample with past fumigation status.
+```{r}
+# filter out non-fumigated samples from fam.mat
+sample_past = sample_metadata %>%
+  filter(fumigation == "past")
+
+sample_past_id = sample_past %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+genus.mat.past = genus.mat[rownames(genus.mat) %in% sample_past_id, ]
+genus.mat.filt.past = genus.mat.filt[rownames(genus.mat.filt) %in% sample_past_id, ]
+genus.mat.harsh.past = genus.mat.harsh[rownames(genus.mat.harsh) %in% sample_past_id, ]
+```
+
+Running Permanova analysis to see if time has any effect on the relative abundance of microbes in the soil.
+```{r}
+# calculating the distance matrix, we can specify different method depends on our normalization method
+dist_matrix_fun_7 = vegdist(genus.mat.past, method = "bray")
+dist_matrix_fun_8 = vegdist(genus.mat.filt.past, method = "bray")
+dist_matrix_fun_9 = vegdist(genus.mat.harsh.past, method = "bray")
+
+# 1 - all families without filtering
+permanova_result_time_fun_1 = adonis2(dist_matrix_fun_7 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_fun_1
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_time_fun_2 = adonis2(dist_matrix_fun_8 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_fun_2
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_time_fun_3 = adonis2(dist_matrix_fun_9 ~ Time, data = sample_past, permutations = 999)
+permanova_result_time_fun_3
+```
 
 ## Permanova for Species
 
@@ -484,3 +567,15 @@ permanova_result_species_2
 ```
 
 We observe similar pattern in fungi compare to bacteria. Fumigation status has effect on the abundance of OTUs, but treatment does not.
+
+
+## Permanova for Time
+  
+```{r}
+
+species.mat.time = species.mat[rownames(species.mat) %in% sample_past_id, ]
+dist_matrix_species_3 = vegdist(species.mat.time, method = "bray")
+
+permanova_result_species_3 = adonis2(dist_matrix_species_3 ~ Time, data = sample_past, permutations = 999)
+permanova_result_species_3
+```
