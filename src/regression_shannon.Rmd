@@ -1,5 +1,5 @@
 ---
-title: "Linear Regression on Alpha Diversity and Fumigation"
+title: "Linear Regression on Alpha Diversity and Fumigation Using Shannon Index"
 author: "Tianyi Xu"
 date: "2023-05-21"
 output: html_document
@@ -88,7 +88,7 @@ Here is a plot to visualize the distribution of alpha diversity
 ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (Shannon) by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (Shannon)")
 
 ```
 
@@ -124,7 +124,7 @@ sample_metadata_treat = sample_metadata %>%
 ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Treatment", x="Treatment", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
 ```
 
 Linear Model for treatment and alpha diversity
@@ -211,7 +211,7 @@ Here is a plot to visualize the distribution of alpha diversity
 ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (Shannon) for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (Shannon)")
 
 ```
 
@@ -246,7 +246,7 @@ sample_metadata_treat = sample_metadata %>%
 ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Treatment", x="Treatment", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
 ```
 
 Linear Model for treatment and alpha diversity
