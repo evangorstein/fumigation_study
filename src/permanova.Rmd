@@ -201,7 +201,15 @@ First, filter out only sample with past fumigation status.
 sample_past = sample_metadata %>%
   filter(fumigation == "past")
 
+sample_never = sample_metadata %>%
+  filter(fumigation == "never")
+
 sample_past_id = sample_past %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+sample_never_id = sample_never %>%
   pull(samp_number) %>%
   str_pad(width = 3, pad = "0") %>%
   paste0("Samp", .)
@@ -209,6 +217,10 @@ sample_past_id = sample_past %>%
 fam.mat.past = fam.mat[rownames(fam.mat) %in% sample_past_id, ]
 fam.mat.filt.past = fam.mat.filt[rownames(fam.mat.filt) %in% sample_past_id, ]
 fam.mat.harsh.past = fam.mat.harsh[rownames(fam.mat.harsh) %in% sample_past_id, ]
+
+fam.mat.never = fam.mat[rownames(fam.mat) %in% sample_never_id, ]
+fam.mat.filt.never = fam.mat.filt[rownames(fam.mat.filt) %in% sample_never_id, ]
+fam.mat.harsh.never = fam.mat.harsh[rownames(fam.mat.harsh) %in% sample_never_id, ]
 ```
 
 Running Permanova analysis to see if time has any effect on the relative abundance of microbes in the soil.
@@ -216,6 +228,9 @@ Running Permanova analysis to see if time has any effect on the relative abundan
 dist_matrix_time_1 = vegdist(fam.mat.past, method = "bray")
 dist_matrix_time_2 = vegdist(fam.mat.filt.past, method = "bray")
 dist_matrix_time_3 = vegdist(fam.mat.harsh.past, method = "bray")
+dist_matrix_time_4 = vegdist(fam.mat.never, method = "bray")
+dist_matrix_time_5 = vegdist(fam.mat.filt.never, method = "bray")
+dist_matrix_time_6 = vegdist(fam.mat.harsh.never, method = "bray")
 
 # 1 - all families without filtering
 permanova_result_time_1 = adonis2(dist_matrix_time_1 ~ Time, data = sample_past, permutations = 999)
@@ -228,6 +243,18 @@ permanova_result_time_2
 # 3 - filtering to only families with abundance >= 10000
 permanova_result_time_3 = adonis2(dist_matrix_time_3 ~ Time, data = sample_past, permutations = 999)
 permanova_result_time_3
+
+# 1 - all families without filtering
+permanova_result_time_4 = adonis2(dist_matrix_time_4 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_4
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_time_5 = adonis2(dist_matrix_time_5 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_5
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_time_6 = adonis2(dist_matrix_time_6 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_6
 ```
 
 
@@ -297,8 +324,14 @@ permanova_result_species_2
 species.mat.time = species.mat[rownames(species.mat) %in% sample_past_id, ]
 dist_matrix_species_3 = vegdist(species.mat.time, method = "bray")
 
+species.mat.never = species.mat[rownames(species.mat) %in% sample_never_id, ]
+dist_matrix_species_4 = vegdist(species.mat.never, method = "bray")
+
 permanova_result_species_3 = adonis2(dist_matrix_species_3 ~ Time, data = sample_past, permutations = 999)
 permanova_result_species_3
+
+permanova_result_species_4 = adonis2(dist_matrix_species_4 ~ Time, data = sample_never, permutations = 999)
+permanova_result_species_4
 ```
 
 ## Obervations
@@ -490,7 +523,15 @@ First, filter out only sample with past fumigation status.
 sample_past = sample_metadata %>%
   filter(fumigation == "past")
 
+sample_never = sample_metadata %>%
+  filter(fumigation == "never")
+
 sample_past_id = sample_past %>%
+  pull(samp_number) %>%
+  str_pad(width = 3, pad = "0") %>%
+  paste0("Samp", .)
+
+sample_never_id = sample_never %>%
   pull(samp_number) %>%
   str_pad(width = 3, pad = "0") %>%
   paste0("Samp", .)
@@ -498,6 +539,10 @@ sample_past_id = sample_past %>%
 genus.mat.past = genus.mat[rownames(genus.mat) %in% sample_past_id, ]
 genus.mat.filt.past = genus.mat.filt[rownames(genus.mat.filt) %in% sample_past_id, ]
 genus.mat.harsh.past = genus.mat.harsh[rownames(genus.mat.harsh) %in% sample_past_id, ]
+
+genus.mat.never = genus.mat[rownames(genus.mat) %in% sample_never_id, ]
+genus.mat.filt.never = genus.mat.filt[rownames(genus.mat.filt) %in% sample_never_id, ]
+genus.mat.harsh.never = genus.mat.harsh[rownames(genus.mat.harsh) %in% sample_never_id, ]
 ```
 
 Running Permanova analysis to see if time has any effect on the relative abundance of microbes in the soil.
@@ -506,6 +551,9 @@ Running Permanova analysis to see if time has any effect on the relative abundan
 dist_matrix_fun_7 = vegdist(genus.mat.past, method = "bray")
 dist_matrix_fun_8 = vegdist(genus.mat.filt.past, method = "bray")
 dist_matrix_fun_9 = vegdist(genus.mat.harsh.past, method = "bray")
+dist_matrix_fun_10 = vegdist(genus.mat.never, method = "bray")
+dist_matrix_fun_11 = vegdist(genus.mat.filt.never, method = "bray")
+dist_matrix_fun_12 = vegdist(genus.mat.harsh.never, method = "bray")
 
 # 1 - all families without filtering
 permanova_result_time_fun_1 = adonis2(dist_matrix_fun_7 ~ Time, data = sample_past, permutations = 999)
@@ -518,6 +566,18 @@ permanova_result_time_fun_2
 # 3 - filtering to only families with abundance >= 10000
 permanova_result_time_fun_3 = adonis2(dist_matrix_fun_9 ~ Time, data = sample_past, permutations = 999)
 permanova_result_time_fun_3
+
+# 1 - all families without filtering
+permanova_result_time_fun_4 = adonis2(dist_matrix_fun_10 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_fun_4
+
+# 2 - filtering to only families with abundance >= 1000
+permanova_result_time_fun_5 = adonis2(dist_matrix_fun_11 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_fun_5
+
+# 3 - filtering to only families with abundance >= 10000
+permanova_result_time_fun_6 = adonis2(dist_matrix_fun_12 ~ Time, data = sample_never, permutations = 999)
+permanova_result_time_fun_6
 ```
 
 ## Permanova for Species
@@ -576,6 +636,12 @@ We observe similar pattern in fungi compare to bacteria. Fumigation status has e
 species.mat.time = species.mat[rownames(species.mat) %in% sample_past_id, ]
 dist_matrix_species_3 = vegdist(species.mat.time, method = "bray")
 
+species.mat.never = species.mat[rownames(species.mat) %in% sample_never_id, ]
+dist_matrix_species_4 = vegdist(species.mat.never, method = "bray")
+
 permanova_result_species_3 = adonis2(dist_matrix_species_3 ~ Time, data = sample_past, permutations = 999)
 permanova_result_species_3
+
+permanova_result_species_4 = adonis2(dist_matrix_species_4 ~ Time, data = sample_never, permutations = 999)
+permanova_result_species_4
 ```
