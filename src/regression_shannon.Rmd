@@ -19,7 +19,7 @@ library(stringr)
 
 ## Background
 
-The following code performs linear regression to compare the alpha diversity by fumigation.
+The following code performs linear regression to compare the alpha diversity by fumigation using shannon index.
 
 ## Load Data
 
