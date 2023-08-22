@@ -1,0 +1,273 @@
+---
+title: "Linear Regression on Alpha Diversity and Fumigation Using Shannon Index"
+author: "Tianyi Xu"
+date: "2023-05-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+```
+
+## Background
+
+The following code performs linear regression to compare the alpha diversity by fumigation using shannon index.
+
+## Load Data
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+The following chunk of code is to make a family abundance dataframe - we only look at the family level first.
+Note that the "Unknown_Family" value aggregates the counts for all the OTUs whose families are unknown
+```{r}
+# transpose the data
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with family label as rownames 
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = t(fam.mat)
+```
+
+```{r}
+
+sample_metadata = tibble(samp_metadata)
+samps = rownames(fam.mat)
+rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  ))
+```
+
+## Calculate Alpha Diversity
+
+```{r}
+# Calculate alpha diversity (shannon index) for each sample
+alpha_div <- diversity(fam.mat, index = "shannon")
+
+sample_metadata = sample_metadata %>%
+  mutate(shannon = alpha_div)
+```
+
+
+## Linear Regression for Fumigation Status and Treatment with Alpha Diversity
+
+```{r}
+model_both <- lm(shannon ~ fumigation * Treatment, data = sample_metadata)
+summary(model_both)
+```
+
+
+Here is 2 models for fumigation and treatment separately. 
+
+## Linear Regression
+
+Here is a plot to visualize the distribution of alpha diversity
+
+```{r}
+ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title="Alpha-Diversity (Shannon) by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (Shannon)")
+
+```
+
+
+First fit the linear regression for alpha diversity and fumigation status.
+
+```{r}
+model = lm(shannon ~ fumigation, data = sample_metadata)
+summary(model)
+```
+
+Check the residual plot to see if linear model is appropriate
+
+```{r}
+residuals = resid(model)
+fitted_values = fitted(model)
+
+ggplot() +
+  geom_point(aes(x = fitted_values, y = residuals)) +
+  geom_hline(yintercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title="Residual Plot", x="Fitted values", y="Residuals")
+```
+
+## Linear Model for Treatment
+
+```{r}
+# filter out samples that is not fumigated
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+
+# boxplot for alpha diversity by treatment
+ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
+```
+
+Linear Model for treatment and alpha diversity
+```{r}
+model_t = lm(shannon ~ Treatment, data = sample_metadata_treat)
+summary(model_t)
+```
+
+Residual Plot
+
+```{r}
+residuals_t = resid(model_t)
+fitted_values_t = fitted(model_t)
+
+ggplot() +
+  geom_point(aes(x = fitted_values_t, y = residuals_t)) +
+  geom_hline(yintercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title="Residual Plot", x="Fitted values", y="Residuals")
+```
+
+
+It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
+
+
+
+## Model for Fungi 
+
+Reading in data
+```{r}
+fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+```
+
+Data cleaning
+```{r}
+genus.df = fung_abundance %>% 
+  mutate(Genus = fct_na_value_to_level(Genus, "Unknown")) %>%
+  group_by(Genus) %>%
+  summarise(across(starts_with("Samp"), sum)) 
+
+genuses = genus.df$Genus
+genus.mat = as.matrix(genus.df[,-1])
+rownames(genus.mat) = genuses
+genus.mat = genus.mat[rownames(genus.mat)!="Unknown",]
+genus.mat = t(genus.mat)
+
+sample_metadata = tibble(samp_metadata)
+samps = rownames(genus.mat)
+rownames(sample_metadata) = samps
+
+sample_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  ))
+```
+
+Calculating the alpha diversity 
+
+```{r}
+alpha_div_fungi <- diversity(genus.mat, index = "shannon")
+
+sample_metadata = sample_metadata %>%
+  mutate(shannon_fungi = alpha_div_fungi)
+```
+
+
+## Linear Regression for both the Fumigation Status and Treatment with Alpha Diversity
+
+```{r}
+model_both <- lm(shannon_fungi ~ fumigation * Treatment, data = sample_metadata)
+summary(model_both)
+```
+
+Here is 2 models for fumigation and treatment separately. (Since we know treatment itself does not have much impact).
+
+## Linear Regression
+
+Here is a plot to visualize the distribution of alpha diversity
+
+```{r}
+ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title="Alpha-Diversity (Shannon) for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (Shannon)")
+
+```
+
+
+First fit the linear regression for alpha diversity and fumigation status.
+
+```{r}
+model = lm(shannon_fungi ~ fumigation, data = sample_metadata)
+summary(model)
+```
+
+Check the residual to see if linear model is appropriate
+```{r}
+residuals = resid(model)
+fitted_values = fitted(model)
+
+ggplot() +
+  geom_point(aes(x = fitted_values, y = residuals)) +
+  geom_hline(yintercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title="Residual Plot", x="Fitted values", y="Residuals")
+```
+
+## Linear Model for Treatment
+
+```{r}
+# filter out samples that is not fumigated
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+
+# boxplot for alpha diversity by treatment
+ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon_fungi)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
+```
+
+Linear Model for treatment and alpha diversity
+
+```{r}
+model_t = lm(shannon_fungi ~ Treatment, data = sample_metadata_treat)
+summary(model_t)
+```
+
+Residual Plot
+
+```{r}
+residuals_t = resid(model_t)
+fitted_values_t = fitted(model_t)
+
+ggplot() +
+  geom_point(aes(x = fitted_values_t, y = residuals_t)) +
+  geom_hline(yintercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title="Residual Plot", x="Fitted values", y="Residuals")
+```
+
+It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
+

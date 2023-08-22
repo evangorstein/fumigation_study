@@ -1,7 +1,7 @@
 ---
-title: "Linear Regression on Alpha Diversity and Fumigation"
+title: "Linear Regression on Alpha Diversity and Fumigation Using Inverse Simpson Index"
 author: "Tianyi Xu"
-date: "2023-05-21"
+date: "2023-08-20"
 output: html_document
 ---
 
@@ -19,7 +19,7 @@ library(stringr)
 
 ## Background
 
-The following code performs linear regression to compare the alpha diversity by fumigation.
+The following code performs linear regression to compare the alpha diversity by fumigation using inverse simpson index.
 
 ## Load Data
 
@@ -45,8 +45,8 @@ fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
 fam.mat = t(fam.mat)
 ```
 
-```{r}
 
+```{r}
 sample_metadata = tibble(samp_metadata)
 samps = rownames(fam.mat)
 rownames(sample_metadata) = samps
@@ -62,18 +62,19 @@ sample_metadata = samp_metadata %>%
 ## Calculate Alpha Diversity
 
 ```{r}
-# Calculate alpha diversity (shannon index) for each sample
-alpha_div <- diversity(fam.mat, index = "shannon")
+# Calculate alpha diversity (inverse simpson) for each sample
+alpha_div = diversity(fam.mat, index = "simpson")
+alpha_div = 1/alpha_div
 
 sample_metadata = sample_metadata %>%
-  mutate(shannon = alpha_div)
+  mutate(inv_simpson = alpha_div)
 ```
 
 
 ## Linear Regression for Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(shannon ~ fumigation * Treatment, data = sample_metadata)
+model_both <- lm(inv_simpson ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -85,18 +86,17 @@ Here is 2 models for fumigation and treatment separately.
 Here is a plot to visualize the distribution of alpha diversity
 
 ```{r}
-ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
+ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (inv_simpson) by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (inv_simpson)")
 
 ```
 
-
-First fit the linear regression for alpha diversity and fumigation status.
+First fit the linear regression for alpha diversity (inverse_simpson) and fumigation status.
 
 ```{r}
-model = lm(shannon ~ fumigation, data = sample_metadata)
+model = lm(inv_simpson ~ fumigation, data = sample_metadata)
 summary(model)
 ```
 
@@ -121,15 +121,15 @@ sample_metadata_treat = sample_metadata %>%
   filter(fumigation != "never")
 
 # boxplot for alpha diversity by treatment
-ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
+ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Treatment", x="Treatment", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (inv_simpson) by Treatment", x="Treatment", y="Alpha-Diversity (inv_simpson)")
 ```
 
-Linear Model for treatment and alpha diversity
+Linear Model for treatment and alpha diversity (inv_simpson)
 ```{r}
-model_t = lm(shannon ~ Treatment, data = sample_metadata_treat)
+model_t = lm(inv_simpson ~ Treatment, data = sample_metadata_treat)
 summary(model_t)
 ```
 
@@ -184,20 +184,21 @@ sample_metadata = samp_metadata %>%
   ))
 ```
 
-Calculating the alpha diversity 
+Calculating the alpha diversity using shannon index
 
 ```{r}
-alpha_div_fungi <- diversity(genus.mat, index = "shannon")
+alpha_div_fungi = diversity(genus.mat, index = "simpson")
+alpha_div_fungi = 1/alpha_div_fungi
 
 sample_metadata = sample_metadata %>%
-  mutate(shannon_fungi = alpha_div_fungi)
+  mutate(inv_simpson_fungi = alpha_div_fungi)
 ```
 
 
 ## Linear Regression for both the Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(shannon_fungi ~ fumigation * Treatment, data = sample_metadata)
+model_both <- lm(inv_simpson_fungi ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -205,13 +206,13 @@ Here is 2 models for fumigation and treatment separately. (Since we know treatme
 
 ## Linear Regression
 
-Here is a plot to visualize the distribution of alpha diversity
+Here is a plot to visualize the distribution of alpha diversity using shannon index
 
 ```{r}
-ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
+ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (inv_simpson) for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (inv_simpson)")
 
 ```
 
@@ -219,7 +220,7 @@ ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
 First fit the linear regression for alpha diversity and fumigation status.
 
 ```{r}
-model = lm(shannon_fungi ~ fumigation, data = sample_metadata)
+model = lm(inv_simpson_fungi ~ fumigation, data = sample_metadata)
 summary(model)
 ```
 
@@ -243,16 +244,16 @@ sample_metadata_treat = sample_metadata %>%
   filter(fumigation != "never")
 
 # boxplot for alpha diversity by treatment
-ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon_fungi)) +
+ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity by Treatment", x="Treatment", y="Alpha-Diversity")
+  labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
 ```
 
 Linear Model for treatment and alpha diversity
 
 ```{r}
-model_t = lm(shannon_fungi ~ Treatment, data = sample_metadata_treat)
+model_t = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
 summary(model_t)
 ```
 
@@ -270,4 +271,5 @@ ggplot() +
 ```
 
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
+
 
