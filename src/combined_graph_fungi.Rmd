@@ -881,3 +881,68 @@ response10_2 = CARlasso(formula_single10, data = genus_df, link = "logit", adapt
 response10_2.horse = horseshoe(response10_2)
 plot(response10_2.horse)
 ```
+
+
+
+```{r}
+#never dataframe
+never_mat = genus.mat[never_fumigated,]
+recent_mat = genus.mat[recent_fumigated,]
+past_mat = genus.mat[past_fumigated,]
+
+#d1 = sum(never_mat[,"Diplorickettsiaceae"])
+#d2 = sum(recent_mat[,"Diplorickettsiaceae"])
+#d3 = sum(past_mat[,"Diplorickettsiaceae"])
+```
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+for (name in top_20$names) {
+  d1 = sum(never_mat[,name])
+  d2 = sum(recent_mat[,name])
+  d3 = sum(past_mat[,name])
+  print(paste(name, d1, d2, d3))
+}
+```
+
+The top 20's taxa's abundance is different in never, recent, past. (Sum across all samples of corresponding fumigation status)
+
+Now, we classify the top 20 taxa into 3 groups.
+1. Abundance in recent is lower than never, and past is higher than recent but lower than never.
+2. Abundance in recent is higher than never, and past is lower than recent but higher than never.
+3. Abundance in recent is higher than never, and past is higher.
+4. Abundance in recent is lower than never, and past is lower.
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+group_df = data.frame(
+  names = top_20$names,
+  d1 = NA,
+  d2 = NA,
+  d3 = NA,
+  group = NA
+)
+
+for (name in top_20$names) {
+  d1 = sum(never_mat[,name]) / length(never_fumigated)
+  d2 = sum(recent_mat[,name]) / length(recent_fumigated)
+  d3 = sum(past_mat[,name]) / length(past_fumigated)
+  if ((d2 < d1) && (d3 < d1)) {
+    group = 1
+  }
+  if ((d2 < d1) && (d3 > d2) && (d3 > d1)) {
+    group = 2
+  }
+  if ((d2 > d1) && (d3 > d2)) {
+    group = 3
+  }
+  if ((d2 > d1) && (d3 < d2)) {
+    group = 3
+  }
+  group_df[group_df$names == name,]$d1 = d1
+  group_df[group_df$names == name,]$d2 = d2
+  group_df[group_df$names == name,]$d3 = d3
+  group_df[group_df$names == name,]$group = group
+}
+group_df
+```
