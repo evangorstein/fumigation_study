@@ -957,3 +957,65 @@ group_df
 ```
 
 
+Analysis of Edges identified by all 3 networks
+
+```{r}
+# get otu from edges in all 3 networks
+otu.never = union(edges_in_all_3_never$V1, edges_in_all_3_never$V2)
+otu.recent = union(edges_in_all_3_recent$V1, edges_in_all_3_recent$V2)
+otu.past = union(edges_in_all_3_past$V1, edges_in_all_3_past$V2)
+
+overall = union(otu.never, otu.recent)
+overall = union(overall, otu.past)
+
+otu.never
+otu.recent
+otu.past
+overall
+```
+
+```{r}
+# function to make a df with otu and their abundance in each fumigation status
+otu_df = function(names) {
+  new_df = data.frame(
+  names = names,
+  d1 = NA,
+  d2 = NA,
+  d3 = NA,
+  group = NA
+  )
+  for (name in names) {
+    d1 = sum(never_mat[,name]) / length(never_fumigated)
+    d2 = sum(recent_mat[,name]) / length(recent_fumigated)
+    d3 = sum(past_mat[,name]) / length(past_fumigated)
+    if ((d2 < d1) && (d3 < d1)) {
+      group = 1
+    }
+    if ((d2 < d1) && (d3 > d2) && (d3 > d1)) {
+      group = 2
+    }
+    if ((d2 > d1) && (d3 > d2)) {
+      group = 3
+    }
+    if ((d2 > d1) && (d3 < d2)) {
+      group = 3
+    }
+    new_df[new_df$names == name,]$d1 = d1
+    new_df[new_df$names == name,]$d2 = d2
+    new_df[new_df$names == name,]$d3 = d3
+    new_df[new_df$names == name,]$group = group
+  }
+  return(new_df)
+}
+```
+
+```{r}
+# make df for otu in all 3 networks
+all_3_never_df = otu_df(otu.never)
+all_3_recent_df = otu_df(otu.recent)
+all_3_past_df = otu_df(otu.past)
+
+all_3_never_df
+all_3_recent_df
+all_3_past_df
+```
