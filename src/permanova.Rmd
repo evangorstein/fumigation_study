@@ -120,9 +120,9 @@ fam.ls = t( t(fam.mat) / colSums(fam.mat) )
 fam.ls.filt = t( t(fam.filt) / colSums(fam.filt) )
 fam.ls.harsh = t( t(fam.filt.harsh) / colSums(fam.filt.harsh))
 
-fam.ls.nm = fam.ls[-nrow(fam.ls),]
-fam.ls.filt.nm = fam.ls.filt[-nrow(fam.ls.filt),]
-fam.ls.harsh.nm = fam.ls.harsh[-nrow(fam.ls.harsh),]
+fam.ls.nm = fam.ls
+fam.ls.filt.nm = fam.ls.filt
+fam.ls.harsh.nm = fam.ls.harsh
 
 fam.mat = t(fam.ls.nm)
 fam.mat.filt = t(fam.ls.filt.nm)
@@ -292,7 +292,7 @@ Apply library sum normalization to the data
 ```{r}
 ## Normalize by library size
 species.ls = t( t(species.mat) / colSums(species.mat) )
-species.ls.nm = species.ls[-nrow(species.ls),]
+species.ls.nm = species.ls
 species.mat = t(species.ls.nm)
 ```
 
@@ -442,9 +442,9 @@ genus.ls = t( t(genus.mat) / colSums(genus.mat) )
 genus.ls.filt = t( t(genus.filt) / colSums(genus.filt) )
 genus.ls.harsh = t( t(genus.filt.harsh) / colSums(genus.filt.harsh))
 
-genus.ls.nm = genus.ls[-nrow(genus.ls),]
-genus.ls.filt.nm = genus.ls.filt[-nrow(genus.ls.filt),]
-genus.ls.harsh.nm = genus.ls.harsh[-nrow(genus.ls.harsh),]
+genus.ls.nm = genus.ls
+genus.ls.filt.nm = genus.ls.filt
+genus.ls.harsh.nm = genus.ls.harsh
 
 genus.mat = t(genus.ls.nm)
 genus.mat.filt = t(genus.ls.filt.nm)
@@ -601,7 +601,7 @@ Apply library sum normalization to the data
 ```{r}
 ## Normalize by library size
 species.ls = t( t(species.mat) / colSums(species.mat) )
-species.ls.nm = species.ls[-nrow(species.ls),]
+species.ls.nm = species.ls
 species.mat = t(species.ls.nm)
 ```
 
