@@ -122,11 +122,19 @@ glasso_net = function(mat, rho){
 
 # function for dissimilarity matrix
 dis_net = function(mat, cutoff){
-    diss.mat = as.matrix(vegdist(t(mat)), method = "bray")
+    # TODO: considering normalizing the data?
+    # Normalize the data
+    mat = t(mat)
+    #print(library_size)
+    fam.ls = t( t(mat) / colSums(mat))
+    
+    normal_mat = t(fam.ls)
+    diss.mat = as.matrix(vegdist(t(normal_mat)), method = "bray")
     diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
     net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
     return(net.diss)
 }
+
 
 # function for correlation matrix method
 corr_net = function(mat, cutoff){
