@@ -74,7 +74,7 @@ sample_metadata = sample_metadata %>%
 ## Linear Regression for Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(inv_simpson ~ fumigation * Treatment, data = sample_metadata)
+model_both = lm(inv_simpson ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -149,6 +149,33 @@ ggplot() +
 
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
 
+## Model Assessment using ANOVA
+
+```{r}
+# Model assessment for fumigation status
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(inv_simpson ~ fumigation + Treatment, data = sample_metadata)
+
+# then, construct a linear model with only fumigation
+model_fum = lm(inv_simpson ~ fumigation, data = sample_metadata)
+
+# compare the two models using anova
+anova(model_fum, model_treat_fum)
+```
+
+```{r}
+# Model assessment for treatment
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(inv_simpson ~ fumigation + Treatment, data = sample_metadata_treat)
+
+# then, construct a linear model with only treatment
+model_treat = lm(inv_simpson ~ Treatment, data = sample_metadata_treat)
+
+# compare the two models using anova
+anova(model_treat, model_treat_fum)
+```
 
 
 ## Model for Fungi 
@@ -198,7 +225,7 @@ sample_metadata = sample_metadata %>%
 ## Linear Regression for both the Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(inv_simpson_fungi ~ fumigation * Treatment, data = sample_metadata)
+model_both = lm(inv_simpson_fungi ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -273,3 +300,30 @@ ggplot() +
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
 
 
+## Model Assessment using ANOVA
+
+```{r}
+# Model assessment for fumigation status
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(inv_simpson_fungi ~ fumigation + Treatment, data = sample_metadata)
+
+# then, construct a linear model with only fumigation
+model_fum = lm(inv_simpson_fungi ~ fumigation, data = sample_metadata)
+
+# compare the two models using anova
+anova(model_fum, model_treat_fum)
+```
+
+```{r}
+# Model assessment for treatment
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(inv_simpson_fungi ~ fumigation + Treatment, data = sample_metadata_treat)
+
+# then, construct a linear model with only treatment
+model_treat = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
+
+# compare the two models using anova
+anova(model_treat, model_treat_fum)
+```
