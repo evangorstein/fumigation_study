@@ -63,7 +63,7 @@ sample_metadata = samp_metadata %>%
 
 ```{r}
 # Calculate alpha diversity (shannon index) for each sample
-alpha_div <- diversity(fam.mat, index = "shannon")
+alpha_div = diversity(fam.mat, index = "shannon")
 
 sample_metadata = sample_metadata %>%
   mutate(shannon = alpha_div)
@@ -73,7 +73,7 @@ sample_metadata = sample_metadata %>%
 ## Linear Regression for Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(shannon ~ fumigation * Treatment, data = sample_metadata)
+model_both = lm(shannon ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -93,7 +93,7 @@ ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
 ```
 
 
-First fit the linear regression for alpha diversity and fumigation status.
+First fit the linear regression for alpha diversity (shannon) and fumigation status.
 
 ```{r}
 model = lm(shannon ~ fumigation, data = sample_metadata)
@@ -127,7 +127,7 @@ ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
   labs(title="Alpha-Diversity (Shannon) by Treatment", x="Treatment", y="Alpha-Diversity (Shannon)")
 ```
 
-Linear Model for treatment and alpha diversity
+Linear Model for treatment and alpha diversity (shannon)
 ```{r}
 model_t = lm(shannon ~ Treatment, data = sample_metadata_treat)
 summary(model_t)
@@ -148,6 +148,34 @@ ggplot() +
 
 
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
+
+## Model Assessment using ANOVA
+
+```{r}
+# Model assessment for fumigation status
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(shannon ~ fumigation + Treatment, data = sample_metadata)
+
+# then, construct a linear model with only fumigation
+model_fum = lm(shannon ~ fumigation, data = sample_metadata)
+
+# compare the two models using anova
+anova(model_fum, model_treat_fum)
+```
+
+```{r}
+# Model assessment for treatment
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(shannon ~ fumigation + Treatment, data = sample_metadata_treat)
+
+# then, construct a linear model with only treatment
+model_treat = lm(shannon ~ Treatment, data = sample_metadata_treat)
+
+# compare the two models using anova
+anova(model_treat, model_treat_fum)
+```
 
 
 
@@ -184,10 +212,10 @@ sample_metadata = samp_metadata %>%
   ))
 ```
 
-Calculating the alpha diversity 
+Calculating the alpha diversity using shannon index
 
 ```{r}
-alpha_div_fungi <- diversity(genus.mat, index = "shannon")
+alpha_div_fungi = diversity(genus.mat, index = "shannon")
 
 sample_metadata = sample_metadata %>%
   mutate(shannon_fungi = alpha_div_fungi)
@@ -197,7 +225,7 @@ sample_metadata = sample_metadata %>%
 ## Linear Regression for both the Fumigation Status and Treatment with Alpha Diversity
 
 ```{r}
-model_both <- lm(shannon_fungi ~ fumigation * Treatment, data = sample_metadata)
+model_both = lm(shannon_fungi ~ fumigation * Treatment, data = sample_metadata)
 summary(model_both)
 ```
 
@@ -205,7 +233,7 @@ Here is 2 models for fumigation and treatment separately. (Since we know treatme
 
 ## Linear Regression
 
-Here is a plot to visualize the distribution of alpha diversity
+Here is a plot to visualize the distribution of alpha diversity using shannon index
 
 ```{r}
 ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
@@ -271,3 +299,30 @@ ggplot() +
 
 It seems linear model model is not appropriate for treatment alone, which is consistent with findings from the permanova analysis.
 
+## Model Assessment using ANOVA
+
+```{r}
+# Model assessment for fumigation status
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(shannon_fungi ~ fumigation + Treatment, data = sample_metadata)
+
+# then, construct a linear model with only fumigation
+model_fum = lm(shannon_fungi ~ fumigation, data = sample_metadata)
+
+# compare the two models using anova
+anova(model_fum, model_treat_fum)
+```
+
+```{r}
+# Model assessment for treatment
+
+# first, construct a linear model with both fumigation and treatment
+model_treat_fum = lm(shannon_fungi ~ fumigation + Treatment, data = sample_metadata_treat)
+
+# then, construct a linear model with only treatment
+model_treat = lm(shannon_fungi ~ Treatment, data = sample_metadata_treat)
+
+# compare the two models using anova
+anova(model_treat, model_treat_fum)
+```
