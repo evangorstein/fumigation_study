@@ -45,14 +45,16 @@ Data Preprocessing
 ```{r}
 # Aggregate based on families. Choose to look at family OTU.
 fam.df = bac_abundance %>% 
-  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
   group_by(Family) %>%
-  summarise(across(starts_with("Samp"), sum)) 
+  summarise(across(starts_with("Samp"), sum))  
 
 fams = fam.df$Family
 fam.mat = as.matrix(fam.df[,-1])
 rownames(fam.mat) = fams
-fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
 fam.mat = t(fam.mat)
 
 # add sample number to metadata for each samples.
