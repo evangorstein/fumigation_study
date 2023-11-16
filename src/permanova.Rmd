@@ -44,7 +44,9 @@ Note that the "Unknown_Family" value aggregates the counts for all the OTUs whos
 ```{r}
 # transpose the data
 fam.df = bac_abundance %>% 
-  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
   group_by(Family) %>%
   summarise(across(starts_with("Samp"), sum))  
 
@@ -52,7 +54,7 @@ fam.df = bac_abundance %>%
 fams = fam.df$Family
 fam.mat = as.matrix(fam.df[,-1])
 rownames(fam.mat) = fams
-fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
 fam.mat = t(fam.mat)
 ```
 

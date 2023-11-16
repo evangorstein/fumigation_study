@@ -15,6 +15,8 @@ library(forcats)
 library(compositions)
 library(dplyr)
 library(stringr)
+library(lmtest)
+library(sandwich)
 ```
 
 ## Background
@@ -33,7 +35,9 @@ Note that the "Unknown_Family" value aggregates the counts for all the OTUs whos
 ```{r}
 # transpose the data
 fam.df = bac_abundance %>% 
-  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
   group_by(Family) %>%
   summarise(across(starts_with("Samp"), sum))  
 
@@ -41,7 +45,7 @@ fam.df = bac_abundance %>%
 fams = fam.df$Family
 fam.mat = as.matrix(fam.df[,-1])
 rownames(fam.mat) = fams
-fam.mat = fam.mat[rownames(fam.mat)!="Unknown_Family",]
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
 fam.mat = t(fam.mat)
 ```
 
@@ -161,7 +165,8 @@ model_treat_fum = lm(shannon ~ fumigation + Treatment, data = sample_metadata)
 model_fum = lm(shannon ~ fumigation, data = sample_metadata)
 
 # compare the two models using anova
-anova(model_fum, model_treat_fum)
+anova_robust = waldtest(model_fum, model_treat_fum, vcov = vcovHC)
+anova_robust
 ```
 
 ```{r}
@@ -174,7 +179,7 @@ model_treat_fum = lm(shannon ~ fumigation + Treatment, data = sample_metadata_tr
 model_treat = lm(shannon ~ Treatment, data = sample_metadata_treat)
 
 # compare the two models using anova
-anova(model_treat, model_treat_fum)
+waldtest(model_treat, model_treat_fum, vcov = vcovHC)
 ```
 
 
@@ -311,7 +316,7 @@ model_treat_fum = lm(shannon_fungi ~ fumigation + Treatment, data = sample_metad
 model_fum = lm(shannon_fungi ~ fumigation, data = sample_metadata)
 
 # compare the two models using anova
-anova(model_fum, model_treat_fum)
+waldtest(model_fum, model_treat_fum, vcov = vcovHC)
 ```
 
 ```{r}
@@ -324,5 +329,5 @@ model_treat_fum = lm(shannon_fungi ~ fumigation + Treatment, data = sample_metad
 model_treat = lm(shannon_fungi ~ Treatment, data = sample_metadata_treat)
 
 # compare the two models using anova
-anova(model_treat, model_treat_fum)
+waldtest(model_treat, model_treat_fum, vcov = vcovHC)
 ```
