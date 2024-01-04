@@ -21,16 +21,9 @@ library(forcats)
 library(compositions)
 library(dplyr)
 library(stringr)
-library(glasso)
-library(igraph)
-library(qgraph)
-library(ggraph)
-library(networkdata)
-library(graphlayouts)
 library(ggforce)
 library(ggplot2)
 library(CARlasso)
-library(viridis)
 ```
 
 
@@ -124,6 +117,11 @@ rownames(day0_mat) = day0_fam
 day0_mat = t( t(day0_mat) / colSums(day0_mat) )
 day0_mat = t(day0_mat)
 day0_df = as.data.frame(day0_mat)
+# filter out families with 0 across all samples
+colsum0 = colSums(day0_df)
+nonzero0 = colsum0 > 0
+day0_df = day0_df[,nonzero0]
+
 day0_df$fumigation_status = day0_fumigation
 day0_df$Treatment = day0_treatment
 
@@ -139,6 +137,12 @@ rownames(day10_mat) = day10_fam
 day10_mat = t( t(day10_mat) / colSums(day10_mat) )
 day10_mat = t(day10_mat)
 day10_df = as.data.frame(day10_mat)
+
+# filter out families with 0 across all samples
+colsum10 = colSums(day10_df)
+nonzero10 = colsum10 > 0
+day10_df = day10_df[,nonzero10]
+
 day10_df$fumigation_status = day10_fumigation
 day10_df$Treatment = day10_treatment
 
@@ -154,6 +158,11 @@ rownames(day282_mat) = day282_fam
 day282_mat = t( t(day282_mat) / colSums(day282_mat) )
 day282_mat = t(day282_mat)
 day282_df = as.data.frame(day282_mat)
+# filter out families with 0 across all samples
+colsum282 = colSums(day282_df)
+nonzero282 = colsum282 > 0
+day282_df = day282_df[,nonzero282]
+
 day282_df$fumigation_status = day282_fumigation
 day282_df$Treatment = day282_treatment
 ```
@@ -175,10 +184,43 @@ formula_both = paste(formula, "~ Treatment")
 formula_both = as.formula(formula_both)
 ```
 
+```{r}
+# check if otus is in the column names for each dataframe, if not, remove from the formula
+not0 = setdiff(otus, colnames(day0_df))
+not10 = setdiff(otus, colnames(day10_df))
+not282 = setdiff(otus, colnames(day282_df))
+
+print(not0)
+print(not10)
+print(not282)
+
+# remove otus that are not in the column names
+otus0 = setdiff(otus, not0)
+otus10 = setdiff(otus, not10)
+otus282 = setdiff(otus, not282)
+
+# update formula
+otu_quoted0 = paste0("`", otus0, "`")
+formula0 = paste(otu_quoted0, collapse = "+")
+formula_both0 = paste(formula0, "~ Treatment")
+formula_both0 = as.formula(formula_both0)
+
+otu_quoted10 = paste0("`", otus10, "`")
+formula10 = paste(otu_quoted10, collapse = "+")
+formula_both10 = paste(formula10, "~ Treatment")
+formula_both10 = as.formula(formula_both10)
+
+otu_quoted282 = paste0("`", otus282, "`")
+formula282 = paste(otu_quoted282, collapse = "+")
+formula_both282 = paste(formula282, "~ Treatment")
+formula_both282 = as.formula(formula_both282)
+```
+
+
 Run CARlasso
 
 ```{r}
-response = CARlasso(formula_both, data = day0_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+response = CARlasso(formula_both0, data = day0_df, link = "logit", adaptive = TRUE, n_iter = 1000)
 ```
 
 ```{r}
@@ -191,7 +233,7 @@ plot(response.horse)
 
 
 ```{r}
-response2 = CARlasso(formula_both, data = day10_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+response2 = CARlasso(formula_both10, data = day10_df, link = "logit", adaptive = TRUE, n_iter = 1000)
 ```
 
 ```{r}
@@ -203,7 +245,7 @@ plot(response2.horse)
 ```
 
 ```{r}
-response3 = CARlasso(formula_both, data = day282_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+response3 = CARlasso(formula_both282, data = day282_df, link = "logit", adaptive = TRUE, n_iter = 1000)
 ```
 
 ```{r}
@@ -213,4 +255,3 @@ response3.horse = horseshoe(response3)
 ```{r}
 plot(response3.horse)
 ```
-
