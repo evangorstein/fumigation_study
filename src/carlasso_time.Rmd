@@ -1,0 +1,257 @@
+---
+title: "Network Analysis"
+author: "Tianyi Xu"
+date: "2023-06-22"
+output: html_document
+---
+
+```{r}
+#installation in case you need some package
+#install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+#devtools::install_github("schochastics/networkdata")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+library(ggforce)
+library(ggplot2)
+library(CARlasso)
+```
+
+
+Read in the data
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+```{r}
+fam.df = bac_abundance %>% 
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
+# fam.ls = t( t(fam.mat) / colSums(fam.mat) )
+# fam.mat = t(fam.ls)
+fam.mat = t(fam.mat)
+
+```
+
+```{r}
+# add sample number to metadata for each samples.
+samp_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  )) %>%
+  mutate(sample_name = case_when(
+    samp_number < 10 ~ paste0("Samp00", samp_number),
+    samp_number < 100 ~ paste0("Samp0", samp_number),
+    TRUE ~ paste0("Samp", samp_number)
+  ))
+
+never_fumigated = samp_metadata %>% 
+  filter(fumigation == "never") %>%
+  pull(sample_name)
+
+recent_fumigated = samp_metadata %>%
+  filter(fumigation == "recent") %>%
+  pull(sample_name)
+
+past_fumigated = samp_metadata %>%
+  filter(fumigation == "past") %>%
+  pull(sample_name)
+
+# normalize the data using library size
+
+fam_df = as.data.frame(fam.mat)
+fam_df = fam_df %>%
+  mutate(sample_name = rownames(fam_df)) %>%
+  mutate(fumigation_status = case_when(
+    sample_name %in% never_fumigated ~ "never",
+    sample_name %in% recent_fumigated ~ "recent",
+    sample_name %in% past_fumigated ~ "past"
+  ))
+fam_df$Treatment = samp_metadata$Treatment
+```
+
+
+
+```{r}
+# pull out samples based on time
+day_0 = samp_metadata %>% filter(Time == "Day_0") %>% pull(sample_name)
+day_10 = samp_metadata %>% filter(Time == "Day_10") %>% pull(sample_name)
+day_282 = samp_metadata %>% filter(Time == "Day_282") %>% pull(sample_name)
+
+# create 3 matrices for each time point
+day0_df = fam_df %>% filter(sample_name %in% day_0)
+day10_df = fam_df %>% filter(sample_name %in% day_10)
+day282_df = fam_df %>% filter(sample_name %in% day_282)
+
+# normalize the data using library size, type to integer
+day0_treatment = day0_df$Treatment
+day0_fumigation = day0_df$fumigation_status
+# drop treatment and fumigation status
+day0_df = day0_df %>% select(-c(sample_name, Treatment, fumigation_status))
+day0_fam = colnames(day0_df)
+day0_mat = as.matrix(day0_df)
+day0_mat = t(day0_mat)
+day0_mat = apply(day0_mat, 2, as.integer)
+rownames(day0_mat) = day0_fam
+day0_mat = t( t(day0_mat) / colSums(day0_mat) )
+day0_mat = t(day0_mat)
+day0_df = as.data.frame(day0_mat)
+# filter out families with 0 across all samples
+colsum0 = colSums(day0_df)
+nonzero0 = colsum0 > 0
+day0_df = day0_df[,nonzero0]
+
+day0_df$fumigation_status = day0_fumigation
+day0_df$Treatment = day0_treatment
+
+day10_treatment = day10_df$Treatment
+day10_fumigation = day10_df$fumigation_status
+# drop treatment and fumigation status
+day10_df = day10_df %>% select(-c(sample_name, Treatment, fumigation_status))
+day10_fam = colnames(day10_df)
+day10_mat = as.matrix(day10_df)
+day10_mat = t(day10_mat)
+day10_mat = apply(day10_mat, 2, as.integer)
+rownames(day10_mat) = day10_fam
+day10_mat = t( t(day10_mat) / colSums(day10_mat) )
+day10_mat = t(day10_mat)
+day10_df = as.data.frame(day10_mat)
+
+# filter out families with 0 across all samples
+colsum10 = colSums(day10_df)
+nonzero10 = colsum10 > 0
+day10_df = day10_df[,nonzero10]
+
+day10_df$fumigation_status = day10_fumigation
+day10_df$Treatment = day10_treatment
+
+day282_treatment = day282_df$Treatment
+day282_fumigation = day282_df$fumigation_status
+# drop treatment and fumigation status
+day282_df = day282_df %>% select(-c(sample_name, Treatment, fumigation_status))
+day282_fam = colnames(day282_df)
+day282_mat = as.matrix(day282_df)
+day282_mat = t(day282_mat)
+day282_mat = apply(day282_mat, 2, as.integer)
+rownames(day282_mat) = day282_fam
+day282_mat = t( t(day282_mat) / colSums(day282_mat) )
+day282_mat = t(day282_mat)
+day282_df = as.data.frame(day282_mat)
+# filter out families with 0 across all samples
+colsum282 = colSums(day282_df)
+nonzero282 = colsum282 > 0
+day282_df = day282_df[,nonzero282]
+
+day282_df$fumigation_status = day282_fumigation
+day282_df$Treatment = day282_treatment
+```
+
+```{r}
+# read in top 20 families csv
+top20 = read_csv(here("data", "top_20.csv"))
+```
+
+## CARlasso 
+
+We run Carlasso on the top 20 families for each time point. 
+
+```{r}
+otus = top20$names
+otu_quoted = paste0("`", otus, "`")
+formula = paste(otu_quoted, collapse = "+")
+formula_both = paste(formula, "~ Treatment")
+formula_both = as.formula(formula_both)
+```
+
+```{r}
+# check if otus is in the column names for each dataframe, if not, remove from the formula
+not0 = setdiff(otus, colnames(day0_df))
+not10 = setdiff(otus, colnames(day10_df))
+not282 = setdiff(otus, colnames(day282_df))
+
+print(not0)
+print(not10)
+print(not282)
+
+# remove otus that are not in the column names
+otus0 = setdiff(otus, not0)
+otus10 = setdiff(otus, not10)
+otus282 = setdiff(otus, not282)
+
+# update formula
+otu_quoted0 = paste0("`", otus0, "`")
+formula0 = paste(otu_quoted0, collapse = "+")
+formula_both0 = paste(formula0, "~ Treatment")
+formula_both0 = as.formula(formula_both0)
+
+otu_quoted10 = paste0("`", otus10, "`")
+formula10 = paste(otu_quoted10, collapse = "+")
+formula_both10 = paste(formula10, "~ Treatment")
+formula_both10 = as.formula(formula_both10)
+
+otu_quoted282 = paste0("`", otus282, "`")
+formula282 = paste(otu_quoted282, collapse = "+")
+formula_both282 = paste(formula282, "~ Treatment")
+formula_both282 = as.formula(formula_both282)
+```
+
+
+Run CARlasso
+
+```{r}
+response = CARlasso(formula_both0, data = day0_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+```
+
+```{r}
+response.horse = horseshoe(response)
+```
+
+```{r}
+plot(response.horse)
+```
+
+
+```{r}
+response2 = CARlasso(formula_both10, data = day10_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+```
+
+```{r}
+response2.horse = horseshoe(response2)
+```
+
+```{r}
+plot(response2.horse)
+```
+
+```{r}
+response3 = CARlasso(formula_both282, data = day282_df, link = "logit", adaptive = TRUE, n_iter = 1000)
+```
+
+```{r}
+response3.horse = horseshoe(response3)
+```
+
+```{r}
+plot(response3.horse)
+```

@@ -837,6 +837,11 @@ formula_both = paste(formula, "~ fumigation_status+Treatment")
 formula_both = as.formula(formula_both)
 ```
 
+```{r}
+# write top 20 to csv
+write.csv(top_20, "top_20.csv")
+```
+
 Run CARlasso
 
 ```{r}
