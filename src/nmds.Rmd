@@ -80,6 +80,8 @@ sample_scores = scores(nmds_asv)$sites %>%
 
 color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
 
+sample_scores$Time <- factor(sample_scores$Time, 
+                             levels = c("Day_0", "Day_10", "Day_43", "Day_71", "Day_255", "Day_282"))
 
 #Plot samples
 samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
@@ -89,7 +91,7 @@ samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
   ggtitle("Samples") +
   theme_bw() +
   theme(plot.title = element_text(hjust=0.5)) +
-  geom_text_repel(aes(label = samp_number)) +
+  #geom_text_repel(aes(label = samp_number)) +
   ggtitle(glue("NMDS with stress {round(nmds_asv$stress, 2)}"))
 
 ggsave(here("plots", "bacteria_nmds.pdf"), samples_plot)
@@ -152,6 +154,9 @@ fung_sample_scores = scores(fung_nmds_asv)$sites %>%
 
 color_coding = c(Never = "#00BA38", Past = "#F8766D", Recent = "#619CFF")
 
+fung_sample_scores$Time <- factor(fung_sample_scores$Time, 
+                             levels = c("Day_0", "Day_10", "Day_43", "Day_71", "Day_255", "Day_282"))
+
 
 #Plot samples
 fung_samples_plot = ggplot(fung_sample_scores, aes(NMDS1, NMDS2)) +
@@ -161,7 +166,7 @@ fung_samples_plot = ggplot(fung_sample_scores, aes(NMDS1, NMDS2)) +
   ggtitle("Samples") +
   theme_bw() +
   theme(plot.title = element_text(hjust=0.5)) +
-  geom_text_repel(aes(label = samp_number)) +
+  #geom_text_repel(aes(label = samp_number)) +
   ggtitle(glue("NMDS with stress {round(fung_nmds_asv$stress, 2)}"))
 
 ggsave(here("plots", "fungal_nmds.pdf"), fung_samples_plot)
