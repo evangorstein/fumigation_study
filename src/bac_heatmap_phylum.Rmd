@@ -41,9 +41,9 @@ rownames(phylum.mat) = phylum
 
 ```
 
-Let's check what most abundant family are (including "Unknown_Family")
+Let's check what most abundant family are (including "Unknown_Phylum")
 ```{r}
-sort(rowSums(fam.mat), dec = T) %>% head(10)
+sort(rowSums(phylum.mat), dec = T) %>% head(10)
 ```
 
 
@@ -54,13 +54,13 @@ Now we filter out rare families. We apply three different thresholds so that we 
 ```{r}
 
 #Filter to only look at families that have at least 1,000 counts in total (summing over samples) 
-fam_mask = rowSums(fam.mat) >= 1000
-fam.filt = fam.mat[fam_mask,]
+phylum_mask = rowSums(phylum.mat) >= 1000
+phylum.filt = phylum.mat[phylum_mask,]
 #153 out of 296 families remain
 
 #Filter to only look at families that have at least 10,000 counts in total (summing over samples) 
-fam_mask_harsh = rowSums(fam.mat) >= 10000
-fam.filt.harsh = fam.mat[fam_mask_harsh,]
+phylum_mask_harsh = rowSums(phylum.mat) >= 10000
+phylum.filt.harsh = phylum.mat[phylum_mask_harsh,]
 #74 out of 296 families remain
 
 ```
@@ -89,18 +89,18 @@ If we wanted to normalize by scaling by library size, we'd run the following cod
 
 Now we normalize with log ratio using the counts of "Unknown_Family" as the reference (the denominator in the ratio). In order to do this and avoid negative infinite values, have to get rid of 0's by adding pseudo count of 0.5
 ```{r}
-fam.smooth = fam.mat + 0.5
-fam.filt.smooth = fam.filt + 0.5
-fam.filt.harsh.smooth = fam.filt.harsh + 0.5
+phylum.smooth = phylum.mat + 0.5
+phylum.filt.smooth = phylum.filt + 0.5
+phylum.filt.harsh.smooth = phylum.filt.harsh + 0.5
 
-fam.lr = t( log(t(fam.smooth) / fam.smooth["Unknown_Family",]) )
-fam.lr.filt = t( log(t(fam.filt.smooth) / fam.filt.smooth["Unknown_Family",]) )
-fam.lr.harsh = t( log(t(fam.filt.harsh.smooth) / fam.filt.harsh.smooth["Unknown_Family",]) )
+phylum.lr = t( log(t(phylum.smooth) / phylum.smooth["Unknown_Phylum",]) )
+phylum.lr.filt = t( log(t(phylum.filt.smooth) / phylum.filt.smooth["Unknown_Phylum",]) )
+phylum.lr.harsh = t( log(t(phylum.filt.harsh.smooth) / phylum.filt.harsh.smooth["Unknown_Phylum",]) )
 
 #Now that we've normalized, safe to get rid of "Unknown_Family"
-fam.lr = fam.lr[rownames(fam.lr)!="Unknown_Family",]
-fam.lr.filt = fam.lr.filt[rownames(fam.lr.filt)!="Unknown_Family",]
-fam.lr.harsh = fam.lr.harsh[rownames(fam.lr.harsh)!="Unknown_Family",]
+phylum.lr = phylum.lr[rownames(phylum.lr)!="Unknown_Phylum",]
+phylum.lr.filt = phylum.lr.filt[rownames(phylum.lr.filt)!="Unknown_Phylum",]
+phylum.lr.harsh = phylum.lr.harsh[rownames(phylum.lr.harsh)!="Unknown_Phylum",]
 ```
 
 
@@ -136,7 +136,7 @@ samp_never_fumigated = c(sapply(never_fumigated, make_sample))
 samp_recently = c(sapply(recently, make_sample))
 samp_more = c(sapply(more_than_a_month, make_sample))
 
-all_samps = colnames(fam.mat)
+all_samps = colnames(phylum.mat)
 
 
 samp_annotation = data.frame(`fumigation status` = factor(case_when(
@@ -174,37 +174,69 @@ create_heatmap = function(df, annotation = NULL,
 }
 
 pdf(here("plots", "bacteria_heatmap1.pdf"))
-plt1 = create_heatmap(fam.lr,
+plt1 = create_heatmap(phylum.lr,
                       annotation = samp_annotation,
                       rowname = FALSE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples 1-240", 
-                      ylabel = "All 296 bacterial families"
+                      ylabel = "All 44 bacterial families"
 )
 dev.off()
 
 pdf(here("plots", "bacteria_heatmap2.pdf"))
-plt1.filt = create_heatmap(fam.lr.filt,
+plt1.filt = create_heatmap(phylum.lr.filt,
                            annotation = samp_annotation,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples 1-240", 
-                           ylabel = "153 most abundant bacterial families"
+                           ylabel = "27 most abundant bacterial families"
 )
 dev.off()
 
 pdf(here("plots", "bacteria_heatmap3.pdf"))
-plt1.harsh = create_heatmap(fam.lr.harsh,
+plt1.harsh = create_heatmap(phylum.lr.harsh,
                             annotation = samp_annotation,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples 1-240", 
-                            ylabel = "74 most abundant bacterial families"
+                            ylabel = "14 most abundant bacterial families"
 )
 dev.off()
 
 ```
 
+# Heatmap for combined average of 3 groups of samples
 
+```{r}
+#Create average of 3 groups of samples
 
+# transpose the matrix
+phylum.lr.t = as.data.frame(t(phylum.lr))
 
+# add sample fumigation status to the dataframe
+phylum.lr.t$fumigation_status = samp_annotation$fumigation.status
+
+# group by fumigation status and calculate the average
+otu.phylum.lr = phylum.lr.t[,-ncol(phylum.lr.t)]
+fumigation.phylum.lr = phylum.lr.t[,ncol(phylum.lr.t)]
+
+otu.phylum.lr = cbind(otu.phylum.lr, Fumigation_Stats = fumigation.phylum.lr)
+
+# group by fumigation status and calculate the average
+otu.phylum.lr = otu.phylum.lr %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.lr = otu.phylum.lr %>% 
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.lr = as.tibble(heatmapdata.phylum.lr)
+
+all_otus = heatmapdata.phylum.lr$OTU
+
+heatmapdata.phylum.lr = heatmapdata.phylum.lr %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.lr) = all_otus
+```
 
 
