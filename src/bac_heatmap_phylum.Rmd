@@ -205,6 +205,10 @@ dev.off()
 
 # Heatmap for combined average of 3 groups of samples
 
+We now visualize the heatmap for the average of the 3 groups of samples. We will use the same function as above but with a few modifications.
+
+Below we first create the dataset.
+
 ```{r}
 #Create average of 3 groups of samples
 
@@ -231,12 +235,106 @@ heatmapdata.phylum.lr = otu.phylum.lr %>%
 
 heatmapdata.phylum.lr = as.tibble(heatmapdata.phylum.lr)
 
-all_otus = heatmapdata.phylum.lr$OTU
+all_otus.phylum.lr = heatmapdata.phylum.lr$OTU
 
 heatmapdata.phylum.lr = heatmapdata.phylum.lr %>% 
   select(-OTU)
 
-row.names(heatmapdata.phylum.lr) = all_otus
+row.names(heatmapdata.phylum.lr) = all_otus.phylum.lr
+```
+
+```{r}
+phylum.lr.filt.t = as.data.frame(t(phylum.lr.filt))
+
+phylum.lr.filt.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.phylum.lr.filt = phylum.lr.filt.t[,-ncol(phylum.lr.filt.t)]
+fumigation.phylum.lr.filt = phylum.lr.filt.t[,ncol(phylum.lr.filt.t)]
+
+otu.phylum.lr.filt = cbind(otu.phylum.lr.filt, Fumigation_Stats = fumigation.phylum.lr.filt)
+
+otu.phylum.lr.filt = otu.phylum.lr.filt %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.lr.filt = otu.phylum.lr.filt %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.lr.filt = as.tibble(heatmapdata.phylum.lr.filt)
+
+all_otus.phylum.lr.filt = heatmapdata.phylum.lr.filt$OTU
+
+heatmapdata.phylum.lr.filt = heatmapdata.phylum.lr.filt %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.lr.filt) = all_otus.phylum.lr.filt
 ```
 
 
+```{r}
+phylum.lr.harsh.t = as.data.frame(t(phylum.lr.harsh))
+
+phylum.lr.harsh.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.phylum.lr.harsh = phylum.lr.harsh.t[,-ncol(phylum.lr.harsh.t)]
+fumigation.phylum.lr.harsh = phylum.lr.harsh.t[,ncol(phylum.lr.harsh.t)]
+
+otu.phylum.lr.harsh = cbind(otu.phylum.lr.harsh, Fumigation_Stats = fumigation.phylum.lr.harsh)
+
+otu.phylum.lr.harsh = otu.phylum.lr.harsh %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.lr.harsh = otu.phylum.lr.harsh %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.lr.harsh = as.tibble(heatmapdata.phylum.lr.harsh)
+
+all_otus.phylum.lr.harsh = heatmapdata.phylum.lr.harsh$OTU
+
+heatmapdata.phylum.lr.harsh = heatmapdata.phylum.lr.harsh %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.lr.harsh) = all_otus.phylum.lr.harsh
+```
+
+Sample annotation data.
+
+```{r}
+samp_annotation_average = data.frame(`fumigation status` = factor(c("never", "recent", "past")))
+row.names(samp_annotation_average) = c("never", "recent", "past")
+```
+
+Plotting the heatmap.
+
+```{r}
+pdf(here("plots", "bacteria_heatmap1_avg.pdf"))
+plt2 = create_heatmap(heatmapdata.phylum.lr,
+                      annotation = samp_annotation_average,
+                      rowname = FALSE, 
+                      title = "Log ratio normalized abundances", 
+                      xlabel = "Samples 1-240", 
+                      ylabel = "All 44 bacterial families"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap2_avg.pdf"))
+plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
+                           annotation = samp_annotation_average,
+                           title = "Log ratio normalized abundances", 
+                           xlabel = "Samples 1-240", 
+                           ylabel = "27 most abundant bacterial families"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap3_avg.pdf"))
+plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
+                            annotation = samp_annotation_average,
+                            title = "Log ratio normalized abundances", 
+                            xlabel = "Samples 1-240", 
+                            ylabel = "14 most abundant bacterial families"
+)
+dev.off()
+```
