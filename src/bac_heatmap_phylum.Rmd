@@ -338,3 +338,362 @@ plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
 )
 dev.off()
 ```
+
+Now, we see if normalize after we aggreagate to 3 groups make any differences.
+
+```{r}
+#Ceate average of 3 groups of samples
+
+# transpose the matrix
+phylum.smooth.t = as.data.frame(t(phylum.smooth))
+
+# add sample fumigation status to the dataframe
+phylum.smooth.t$fumigation_status = samp_annotation$fumigation.status
+
+# group by fumigation status and calculate the average
+otu.phylum.smooth = phylum.smooth.t[,-ncol(phylum.smooth.t)]
+fumigation.phylum.smooth = phylum.smooth.t[,ncol(phylum.smooth.t)]
+
+otu.phylum.smooth = cbind(otu.phylum.smooth, Fumigation_Stats = fumigation.phylum.smooth)
+
+# group by fumigation status and calculate the average
+otu.phylum.smooth = otu.phylum.smooth %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.smooth = otu.phylum.smooth %>% 
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.smooth = as.tibble(heatmapdata.phylum.smooth)
+
+all_otus.phylum.smooth = heatmapdata.phylum.smooth$OTU
+
+heatmapdata.phylum.smooth = heatmapdata.phylum.smooth %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.smooth) = all_otus.phylum.smooth
+
+# normalize after we aggreagate to 3 groups
+heatmapdata.phylum.smooth = as.matrix(heatmapdata.phylum.smooth)
+#heatmapdata.phylum.smooth = heatmapdata.phylum.smooth + 0.5
+
+heatmapdata.phylum.smooth.norm = t( log(t(heatmapdata.phylum.smooth ) / heatmapdata.phylum.smooth ["Unknown_Phylum",]) )
+heatmapdata.phylum.smooth.norm = heatmapdata.phylum.smooth.norm[rownames(heatmapdata.phylum.smooth.norm)!="Unknown_Phylum",]
+```
+
+```{r}
+phylum.smooth.filt.t = as.data.frame(t(phylum.filt.smooth))
+
+phylum.smooth.filt.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.phylum.smooth.filt = phylum.smooth.filt.t[,-ncol(phylum.smooth.filt.t)]
+fumigation.phylum.smooth.filt = phylum.smooth.filt.t[,ncol(phylum.smooth.filt.t)]
+
+otu.phylum.smooth.filt = cbind(otu.phylum.smooth.filt, Fumigation_Stats = fumigation.phylum.smooth.filt)
+
+otu.phylum.smooth.filt = otu.phylum.smooth.filt %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.smooth.filt = otu.phylum.smooth.filt %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.smooth.filt = as.tibble(heatmapdata.phylum.smooth.filt)
+
+all_otus.phylum.smooth.filt = heatmapdata.phylum.smooth.filt$OTU
+
+heatmapdata.phylum.smooth.filt = heatmapdata.phylum.smooth.filt %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.smooth.filt) = all_otus.phylum.smooth.filt
+
+# normalize after we aggreagate to 3 groups
+heatmapdata.phylum.smooth.filt = as.matrix(heatmapdata.phylum.smooth.filt)
+#heatmapdata.phylum.smooth.filt = heatmapdata.phylum.smooth.filt + 0.5
+
+heatmapdata.phylum.smooth.filt.norm = t( log(t(heatmapdata.phylum.smooth.filt ) / heatmapdata.phylum.smooth.filt ["Unknown_Phylum",]) )
+heatmapdata.phylum.smooth.filt.norm = heatmapdata.phylum.smooth.filt.norm[rownames(heatmapdata.phylum.smooth.filt.norm)!="Unknown_Phylum",]
+```
+
+```{r}
+phylum.smooth.harsh.t = as.data.frame(t(phylum.filt.harsh.smooth))
+
+phylum.smooth.harsh.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.phylum.smooth.harsh = phylum.smooth.harsh.t[,-ncol(phylum.smooth.harsh.t)]
+fumigation.phylum.smooth.harsh = phylum.smooth.harsh.t[,ncol(phylum.smooth.harsh.t)]
+
+otu.phylum.smooth.harsh = cbind(otu.phylum.smooth.harsh, Fumigation_Stats = fumigation.phylum.smooth.harsh)
+
+otu.phylum.smooth.harsh = otu.phylum.smooth.harsh %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.phylum.smooth.harsh = otu.phylum.smooth.harsh %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.phylum.smooth.harsh = as.tibble(heatmapdata.phylum.smooth.harsh)
+
+all_otus.phylum.smooth.harsh = heatmapdata.phylum.smooth.harsh$OTU
+
+heatmapdata.phylum.smooth.harsh = heatmapdata.phylum.smooth.harsh %>% 
+  select(-OTU)
+
+row.names(heatmapdata.phylum.smooth.harsh) = all_otus.phylum.smooth.harsh
+
+# normalize after we aggreagate to 3 groups
+heatmapdata.phylum.smooth.harsh = as.matrix(heatmapdata.phylum.smooth.harsh)
+#heatmapdata.phylum.smooth.harsh = heatmapdata.phylum.smooth.harsh + 0.5
+
+heatmapdata.phylum.smooth.harsh.norm = t( log(t(heatmapdata.phylum.smooth.harsh ) / heatmapdata.phylum.smooth.harsh ["Unknown_Phylum",]) )
+heatmapdata.phylum.smooth.harsh.norm = heatmapdata.phylum.smooth.harsh.norm[rownames(heatmapdata.phylum.smooth.harsh.norm)!="Unknown_Phylum",]
+```
+
+Make the heatmap.
+
+```{r}
+pdf(here("plots", "bacteria_heatmap1_avg_norm.pdf"))
+plt2 = create_heatmap(heatmapdata.phylum.smooth.norm,
+                      annotation = samp_annotation_average,
+                      rowname = FALSE, 
+                      title = "Log ratio normalized abundances", 
+                      xlabel = "Fumigation status", 
+                      ylabel = "All 44 bacterial phylums"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap2_avg_norm.pdf"))
+plt2.filt = create_heatmap(heatmapdata.phylum.smooth.filt.norm,
+                           annotation = samp_annotation_average,
+                           title = "Log ratio normalized abundances", 
+                           xlabel = "Fumigation status", 
+                           ylabel = "27 most abundant bacterial phylums"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap3_avg_norm.pdf"))
+plt2.harsh = create_heatmap(heatmapdata.phylum.smooth.harsh.norm,
+                            annotation = samp_annotation_average,
+                            title = "Log ratio normalized abundances", 
+                            xlabel = "Fumigation status", 
+                            ylabel = "14 most abundant bacterial phylums"
+)
+dev.off()
+```
+
+It appears the difference is minimal.
+
+We also do the same on family level again.
+
+## Family Level Aggreagate
+
+## Aggregate to higher taxonomic level
+We aggregate the counts to the phylum level. Note that the "Unknown_Family" value aggregates the counts for all the OTUs whose families are unknown
+```{r}
+fam.df = bac_abundance %>% 
+  mutate(Family = fct_na_value_to_level(Family, "Unknown_Family")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+#Convert to matrix with family label as rownames 
+family = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = family
+
+```
+
+Let's check what most abundant family are (including "Unknown_Phylum")
+```{r}
+sort(rowSums(fam.mat), dec = T) %>% head(10)
+```
+
+
+## Filter data
+
+Now we filter out rare families. We apply three different thresholds so that we can see three different versions of the heatmap
+
+```{r}
+
+#Filter to only look at families that have at least 1,000 counts in total (summing over samples) 
+fam_mask = rowSums(fam.mat) >= 1000
+fam.filt = fam.mat[fam_mask,]
+#153 out of 296 families remain
+
+#Filter to only look at families that have at least 10,000 counts in total (summing over samples) 
+fam_mask_harsh = rowSums(fam.mat) >= 10000
+fam.filt.harsh = fam.mat[fam_mask_harsh,]
+#74 out of 296 families remain
+
+```
+
+If we wanted to filter `fam.filt` to only include samples in which at least 50 of the remaining 153 families show up (removing a single sample), we'd run the following coder
+```{r}
+#samp_mask = colSums(fam.filt > 0) >= 50
+#fam.filt = fam.filt[,samp_mask]
+#Gets rid of a single sample (sample 173)
+```
+
+If we wanted to normalize by scaling by library size, we'd run the following code
+```{r}
+##Normalize by dividing by library sizes
+#fam.ls = t( t(fam.mat) / colSums(fam.mat) )
+#fam.ls.filt = t( t(fam.filt) / colSums(fam.filt) )
+#fam.ls.harsh = t( t(fam.filt.harsh) / colSums(fam.filt.harsh) )
+#Get rid of missing family 
+#fam.ls.nm = fam.ls[-nrow(fam.ls),]
+#fam.ls.filt.nm = fam.ls.filt[-nrow(fam.ls.filt),]
+#fam.ls.harsh.nm = fam.ls.harsh[-nrow(fam.ls.harsh),]
+```
+
+
+## Normalization
+
+Now we normalize with log ratio using the counts of "Unknown_Family" as the reference (the denominator in the ratio). In order to do this and avoid negative infinite values, have to get rid of 0's by adding pseudo count of 0.5
+```{r}
+fam.smooth = fam.mat + 0.5
+fam.filt.smooth = fam.filt + 0.5
+fam.filt.harsh.smooth = fam.filt.harsh + 0.5
+
+fam.lr = t( log(t(fam.smooth) / fam.smooth["Unknown_Family",]) )
+fam.lr.filt = t( log(t(fam.filt.smooth) / fam.filt.smooth["Unknown_Family",]) )
+fam.lr.harsh = t( log(t(fam.filt.harsh.smooth) / fam.filt.harsh.smooth["Unknown_Family",]) )
+
+#Now that we've normalized, safe to get rid of "Unknown_Family"
+fam.lr = fam.lr[rownames(fam.lr)!="Unknown_Family",]
+fam.lr.filt = fam.lr.filt[rownames(fam.lr.filt)!="Unknown_Family",]
+fam.lr.harsh = fam.lr.harsh[rownames(fam.lr.harsh)!="Unknown_Family",]
+```
+
+
+
+## Heatmap for combined average of 3 groups of samples
+
+We now visualize the heatmap for the average of the 3 groups of samples. We will use the same function as above but with a few modifications.
+
+Below we first create the dataset.
+
+```{r}
+#Create average of 3 groups of samples
+
+# transpose the matrix
+fam.lr.t = as.data.frame(t(fam.lr))
+
+# add sample fumigation status to the dataframe
+fam.lr.t$fumigation_status = samp_annotation$fumigation.status
+
+# group by fumigation status and calculate the average
+otu.fam.lr = fam.lr.t[,-ncol(fam.lr.t)]
+fumigation.fam.lr = fam.lr.t[,ncol(fam.lr.t)]
+
+otu.fam.lr = cbind(otu.fam.lr, Fumigation_Stats = fumigation.fam.lr)
+
+# group by fumigation status and calculate the average
+otu.fam.lr = otu.fam.lr %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.fam.lr = otu.fam.lr %>% 
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.fam.lr = as.tibble(heatmapdata.fam.lr)
+
+all_otus.fam.lr = heatmapdata.fam.lr$OTU
+
+heatmapdata.fam.lr = heatmapdata.fam.lr %>% 
+  select(-OTU)
+
+row.names(heatmapdata.fam.lr) = all_otus.fam.lr
+```
+
+```{r}
+fam.lr.filt.t = as.data.frame(t(fam.lr.filt))
+
+fam.lr.filt.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.fam.lr.filt = fam.lr.filt.t[,-ncol(fam.lr.filt.t)]
+fumigation.fam.lr.filt = fam.lr.filt.t[,ncol(fam.lr.filt.t)]
+
+otu.fam.lr.filt = cbind(otu.fam.lr.filt, Fumigation_Stats = fumigation.fam.lr.filt)
+
+otu.fam.lr.filt = otu.fam.lr.filt %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.fam.lr.filt = otu.fam.lr.filt %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.fam.lr.filt = as.tibble(heatmapdata.fam.lr.filt)
+
+all_otus.fam.lr.filt = heatmapdata.fam.lr.filt$OTU
+
+heatmapdata.fam.lr.filt = heatmapdata.fam.lr.filt %>% 
+  select(-OTU)
+
+row.names(heatmapdata.fam.lr.filt) = all_otus.fam.lr.filt
+```
+
+
+```{r}
+fam.lr.harsh.t = as.data.frame(t(fam.lr.harsh))
+
+fam.lr.harsh.t$fumigation_status = samp_annotation$fumigation.status
+
+otu.fam.lr.harsh = fam.lr.harsh.t[,-ncol(fam.lr.harsh.t)]
+fumigation.fam.lr.harsh = fam.lr.harsh.t[,ncol(fam.lr.harsh.t)]
+
+otu.fam.lr.harsh = cbind(otu.fam.lr.harsh, Fumigation_Stats = fumigation.fam.lr.harsh)
+
+otu.fam.lr.harsh = otu.fam.lr.harsh %>% 
+  group_by(Fumigation_Stats) %>% 
+  summarise(across(everything(), mean), na.rm = TRUE) %>%
+  pivot_longer(cols = -Fumigation_Stats, names_to = "OTU", values_to = "value")
+
+heatmapdata.fam.lr.harsh = otu.fam.lr.harsh %>%
+  pivot_wider(names_from = Fumigation_Stats, values_from = value)
+
+heatmapdata.fam.lr.harsh = as.tibble(heatmapdata.fam.lr.harsh)
+
+all_otus.fam.lr.harsh = heatmapdata.fam.lr.harsh$OTU
+
+heatmapdata.fam.lr.harsh = heatmapdata.fam.lr.harsh %>% 
+  select(-OTU)
+
+row.names(heatmapdata.fam.lr.harsh) = all_otus.fam.lr.harsh
+```
+
+Plotting the heatmap.
+
+```{r}
+pdf(here("plots", "bacteria_heatmap1_avg_fam.pdf"))
+plt2 = create_heatmap(heatmapdata.fam.lr,
+                      annotation = samp_annotation_average,
+                      rowname = FALSE, 
+                      title = "Log ratio normalized abundances", 
+                      xlabel = "Fumigation status", 
+                      ylabel = "All 296 bacterial families"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap2_avg_fam.pdf"))
+plt2.filt = create_heatmap(heatmapdata.fam.lr.filt,
+                           annotation = samp_annotation_average,
+                           title = "Log ratio normalized abundances", 
+                           xlabel = "Fumigation status", 
+                           ylabel = "153 most abundant bacterial families"
+)
+dev.off()
+
+pdf(here("plots", "bacteria_heatmap3_avg_fam.pdf"))
+plt2.harsh = create_heatmap(heatmapdata.fam.lr.harsh,
+                            annotation = samp_annotation_average,
+                            title = "Log ratio normalized abundances", 
+                            xlabel = "Fumigation status", 
+                            ylabel = "74 most abundant bacterial families"
+)
+dev.off()
+```
