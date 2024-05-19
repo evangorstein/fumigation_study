@@ -179,7 +179,7 @@ plt1 = create_heatmap(phylum.lr,
                       rowname = FALSE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples 1-240", 
-                      ylabel = "All 44 bacterial families"
+                      ylabel = "All 44 bacterial phylums"
 )
 dev.off()
 
@@ -188,7 +188,7 @@ plt1.filt = create_heatmap(phylum.lr.filt,
                            annotation = samp_annotation,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples 1-240", 
-                           ylabel = "27 most abundant bacterial families"
+                           ylabel = "27 most abundant bacterial phylums"
 )
 dev.off()
 
@@ -197,7 +197,7 @@ plt1.harsh = create_heatmap(phylum.lr.harsh,
                             annotation = samp_annotation,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples 1-240", 
-                            ylabel = "14 most abundant bacterial families"
+                            ylabel = "14 most abundant bacterial phylums"
 )
 dev.off()
 
@@ -315,8 +315,8 @@ plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = samp_annotation_average,
                       rowname = FALSE, 
                       title = "Log ratio normalized abundances", 
-                      xlabel = "Samples 1-240", 
-                      ylabel = "All 44 bacterial families"
+                      xlabel = "Fumigation status", 
+                      ylabel = "All 44 bacterial phylums"
 )
 dev.off()
 
@@ -324,8 +324,8 @@ pdf(here("plots", "bacteria_heatmap2_avg.pdf"))
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = samp_annotation_average,
                            title = "Log ratio normalized abundances", 
-                           xlabel = "Samples 1-240", 
-                           ylabel = "27 most abundant bacterial families"
+                           xlabel = "Fumigation status", 
+                           ylabel = "27 most abundant bacterial phylums"
 )
 dev.off()
 
@@ -333,8 +333,8 @@ pdf(here("plots", "bacteria_heatmap3_avg.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = samp_annotation_average,
                             title = "Log ratio normalized abundances", 
-                            xlabel = "Samples 1-240", 
-                            ylabel = "14 most abundant bacterial families"
+                            xlabel = "Fumigation status", 
+                            ylabel = "14 most abundant bacterial phylums"
 )
 dev.off()
 ```
