@@ -225,6 +225,19 @@ sample_metadata = sample_metadata %>%
   mutate(inv_simpson_fungi = alpha_div_fungi)
 ```
 
+It appears there is a outlier whith high inverse simpson index. We see who this sample is and remove it.
+
+```{r}
+highest_alpha = sample_metadata %>%
+  filter(inv_simpson_fungi == max(inv_simpson_fungi))
+highest_alpha
+```
+
+```{r}
+sample_metadata = sample_metadata %>%
+  filter(inv_simpson_fungi != max(inv_simpson_fungi))
+```
+
 
 ## Linear Regression for both the Fumigation Status and Treatment with Alpha Diversity
 
@@ -245,26 +258,6 @@ ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)) +
   theme_minimal() +
   labs(title="Alpha-Diversity (inv_simpson) for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (inv_simpson)")
 
-```
-
-It appears there is a outlier whith high inverse simpson index. We see who this sample is and remove it.
-
-```{r}
-highest_alpha = sample_metadata %>%
-  filter(inv_simpson_fungi == max(inv_simpson_fungi))
-highest_alpha
-```
-
-Do the plot again after without the outlier
-
-```{r}
-sample_metadata_filt = sample_metadata %>%
-  filter(inv_simpson_fungi != max(inv_simpson_fungi))
-
-ggplot(sample_metadata_filt, aes(x=fumigation, y=inv_simpson_fungi)) +
-  geom_boxplot() +
-  theme_minimal() +
-  labs(title="Alpha-Diversity (inv_simpson) for Fungi by Fumigation Status", x="Fumigation Status", y="Alpha-Diversity (inv_simpson)")
 ```
 
 
