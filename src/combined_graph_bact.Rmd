@@ -127,6 +127,7 @@ glasso_net = function(mat, rho){
 dis_net = function(mat, cutoff){
     # TODO: considering normalizing the data?
     # Normalize the data
+    mat = mat + 0.5
     mat = t(mat)
     #print(library_size)
     fam.ls = t( t(mat) / colSums(mat))
@@ -181,14 +182,14 @@ V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
 V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
 
 # Find nodes with a degree of 0 for each graph
-zero_degree_nodes_never <- V(never.glasso)[degree(never.glasso) == 0]
-zero_degree_nodes_recent <- V(recent.glasso)[degree(recent.glasso) == 0]
-zero_degree_nodes_past <- V(past.glasso)[degree(past.glasso) == 0]
+zero_degree_nodes_never = V(never.glasso)[degree(never.glasso) == 0]
+zero_degree_nodes_recent = V(recent.glasso)[degree(recent.glasso) == 0]
+zero_degree_nodes_past = V(past.glasso)[degree(past.glasso) == 0]
 
 # Assign these nodes to a new community cluster (e.g., cluster "new_cluster")
-V(never.glasso)[degree(never.glasso) == 0]$clu <- "999"
-V(recent.glasso)[degree(recent.glasso) == 0]$clu <- "999"
-V(past.glasso)[degree(past.glasso) == 0]$clu <- "999"
+V(never.glasso)[degree(never.glasso) == 0]$clu = "999"
+V(recent.glasso)[degree(recent.glasso) == 0]$clu = "999"
+V(past.glasso)[degree(past.glasso) == 0]$clu ="999"
 ```
 
 Plot the network for Glasso method
