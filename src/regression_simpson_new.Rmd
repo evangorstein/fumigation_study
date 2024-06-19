@@ -113,6 +113,18 @@ Here is a plot to visualize the distribution of alpha diversity
 We also need to add significance level on the boxplot.
 
 ```{r}
+# anova for fumigation status
+anova_result = aov(inv_simpson ~ fumigation, data = sample_metadata)
+anova_result
+```
+
+```{r}
+#TukeyHSD for fumigation status
+tukey_result = TukeyHSD(anova_result)
+tukey_result
+```
+
+```{r}
 # Creating labels for each group
 labels_fumigation_b <- c("never" = "a",  # Base group
             "past" = "a",   # Not significantly different from base
@@ -136,7 +148,7 @@ group_max_fumigation_b = sample_metadata %>%
 
 label_data_fumigation_b = left_join(group_max_fumigation_b, data.frame(fumigation = names(labels_vector_fumigation_b), label = labels_vector_fumigation_b), by = "fumigation")
 
-label_data_fumigation_b$max_y <- label_data_fumigation_b$max_y * 1.05
+label_data_fumigation_b$max_y <- label_data_fumigation_b$max_y * 1
 
 # Creating the plot
 p_fumigation_b <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson)) +
@@ -158,7 +170,19 @@ print(p_fumigation_b)
 # filter out samples that is not fumigated
 sample_metadata_treat = sample_metadata %>%
   filter(fumigation != "never")
+```
 
+
+```{r}
+# anova for treatment
+anova_result_treat = aov(inv_simpson ~ Treatment, data = sample_metadata_treat)
+anova_result_treat
+```
+
+```{r}
+#TukeyHSD for treatment
+tukey_result_treat = TukeyHSD(anova_result_treat)
+tukey_result_treat
 ```
 
 ```{r}
@@ -181,7 +205,7 @@ group_max_treatment_b = sample_metadata_treat %>%
 
 label_data_treatment_b = left_join(group_max_treatment_b, data.frame(Treatment = names(labels_vector_treatment_b), label = labels_vector_treatment_b), by = "Treatment")
 
-label_data_treatment_b$max_y <- label_data_treatment_b$max_y * 1.05
+label_data_treatment_b$max_y <- label_data_treatment_b$max_y * 1
 
 # Creating the plot
 p_treatment_b <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson)) +
@@ -192,6 +216,7 @@ p_treatment_b <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson)) 
   geom_text(data = label_data_treatment_b,
             aes(x = Treatment, y = max_y, label = label),
             position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+
 
 # Print the plot
 print(p_treatment_b)
@@ -327,6 +352,18 @@ Here is a plot to visualize the distribution of alpha diversity using shannon in
 We also need to add significance level on the boxplot.
 
 ```{r}
+# anova for fumigation status
+anova_result = aov(inv_simpson_fungi ~ fumigation, data = sample_metadata)
+anova_result
+```
+
+```{r}
+#TukeyHSD for fumigation status
+tukey_result = TukeyHSD(anova_result)
+tukey_result
+```
+
+```{r}
 # Creating labels for each group
 labels_fumigation_f <- c("never" = "a",  # Base group
             "past" = "b",   # Not significantly different from base
@@ -345,7 +382,7 @@ group_max_fumigation_f = sample_metadata %>%
 
 label_data_fumigation_f = left_join(group_max_fumigation_f, data.frame(fumigation = names(labels_vector_fumigation_f), label = labels_vector_fumigation_f), by = "fumigation")
 
-label_data_fumigation_f$max_y <- label_data_fumigation_f$max_y * 1.05
+label_data_fumigation_f$max_y <- label_data_fumigation_f$max_y * 1
 
 # Creating the plot
 p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)) +
@@ -355,7 +392,8 @@ p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)
        x="Fumigation Status", y="Alpha-Diversity (inv_simpson)") +
   geom_text(data = label_data_fumigation_f,
             aes(x = fumigation, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) 
+
 # Print the plot
 print(p_fumigation_f)
 ```
@@ -393,6 +431,23 @@ ggplot() +
 First we visualize the distribution of alpha diversity by treatment
 
 ```{r}
+sample_metadata_treat = sample_metadata %>%
+  filter(fumigation != "never")
+```
+
+```{r}
+# anova for fumigation status
+anova_result = aov(inv_simpson_fungi ~ fumigation, data = sample_metadata_treat)
+anova_result
+```
+
+```{r}
+#TukeyHSD for fumigation status
+tukey_result = TukeyHSD(sample_metadata_treat)
+tukey_result
+```
+
+```{r}
 # Creating labels for each group
 labels_treatment_f <- c("Mirimichi+Biosolids" = "a",  # Base group
             "Mirimichi+Swine" = "a",
@@ -401,21 +456,21 @@ labels_treatment_f <- c("Mirimichi+Biosolids" = "a",  # Base group
 ```
 
 ```{r}
-unique_treatments = unique(sample_metadata$Treatment)
+unique_treatments = unique(sample_metadata_treat$Treatment)
 labels_vector_treatment_f <- labels_treatment_f[match(unique_treatments, names(labels_treatment_f))]
 names(labels_vector_treatment_f) <- unique_treatments
 
-group_max_treatment_f = sample_metadata %>%
+group_max_treatment_f = sample_metadata_treat %>%
   group_by(Treatment) %>%
   summarise(max_y = max(inv_simpson_fungi, na.rm = TRUE)) %>%
   ungroup()
 
 label_data_treatment_f = left_join(group_max_treatment_f, data.frame(Treatment = names(labels_vector_treatment_f), label = labels_vector_treatment_f), by = "Treatment")
 
-label_data_treatment_f$max_y <- label_data_treatment_f$max_y * 1.05
+label_data_treatment_f$max_y <- label_data_treatment_f$max_y * 1
 
 # Creating the plot
-p_treatment_f <- ggplot(sample_metadata, aes(x=Treatment, y=inv_simpson_fungi)) +
+p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
   labs(title="Alpha-Diversity (inv_simpson) for Fungi by Treatment",
@@ -443,7 +498,7 @@ print(p_treatment_f)
 Linear Model for treatment and alpha diversity
 
 ```{r}
-model_t = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata)
+model_t = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
 summary(model_t)
 ```
 
@@ -482,10 +537,10 @@ waldtest(model_fum, model_treat_fum, vcov = vcovHC)
 # Model assessment for treatment
 
 # first, construct a linear model with both fumigation and treatment
-model_treat_fum = lm(inv_simpson_fungi ~ fumigation + Treatment, data = sample_metadata)
+model_treat_fum = lm(inv_simpson_fungi ~ fumigation + Treatment, data = sample_metadata_treat)
 
 # then, construct a linear model with only treatment
-model_treat = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata)
+model_treat = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
 
 # compare the two models using anova
 waldtest(model_treat, model_treat_fum, vcov = vcovHC)
