@@ -46,6 +46,10 @@ Let's check what most abundant family are (including "Unknown_Phylum")
 sort(rowSums(phylum.mat), dec = T) %>% head(10)
 ```
 
+```{r}
+# save the most abundant phylum to a file
+write.table(sort(rowSums(phylum.mat), dec = T), file = here("data", "clean", "most_abundant_phylum_bacteria.txt"))
+```
 
 ## Filter data
 
@@ -63,6 +67,12 @@ phylum_mask_harsh = rowSums(phylum.mat) >= 10000
 phylum.filt.harsh = phylum.mat[phylum_mask_harsh,]
 #74 out of 296 families remain
 
+```
+
+```{r}
+# save 2 filtered phylum only to a file
+write.table(rowSums(phylum.filt), file = here("data", "clean", "most_abundant_phylum_bacteria_filt.txt"))
+write.table(rowSums(phylum.filt.harsh), file = here("data", "clean", "most_abundant_phylum_bacteria_filt_harsh.txt"))
 ```
 
 If we wanted to filter `fam.filt` to only include samples in which at least 50 of the remaining 153 families show up (removing a single sample), we'd run the following coder
