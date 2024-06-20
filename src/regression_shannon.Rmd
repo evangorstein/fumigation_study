@@ -17,6 +17,7 @@ library(dplyr)
 library(stringr)
 library(lmtest)
 library(sandwich)
+library(dunn.test)
 ```
 
 ## Background
@@ -98,6 +99,19 @@ anova_result
 #TukeyHSD for fumigation status
 tukey_result = TukeyHSD(anova_result)
 tukey_result
+```
+
+Non-parametric test for fumigation status
+```{r}
+# Kruksal-Wallis test for fumigation status
+krusal_result = kruskal.test(shannon ~ fumigation, data = sample_metadata)
+krusal_result
+```
+
+```{r}
+# dunns test for fumigation status
+dunn_test_result = dunn.test(sample_metadata$shannon, sample_metadata$fumigation, method = "bonferroni")
+dunn_test_result
 ```
 
 ```{r}
@@ -185,6 +199,18 @@ anova_result_treat
 #TukeyHSD for treatment
 tukey_result_treat = TukeyHSD(anova_result_treat)
 tukey_result_treat
+```
+
+```{r}
+# krusal test for treatment
+krusal_result_treat = kruskal.test(shannon ~ Treatment, data = sample_metadata_treat)
+krusal_result_treat
+```
+
+```{r}
+# dunns test for treatment
+dunn_test_result_treat = dunn.test(sample_metadata_treat$shannon, sample_metadata_treat$Treatment, method = "bonferroni")
+dunn_test_result_treat
 ```
 
 ```{r}
