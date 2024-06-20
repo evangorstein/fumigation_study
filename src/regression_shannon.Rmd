@@ -375,6 +375,20 @@ tukey_result = TukeyHSD(anova_result)
 tukey_result
 ```
 
+Non-parametric test for fumigation status
+
+```{r}
+# Kruksal-Wallis test for fumigation status
+krusal_result = kruskal.test(shannon_fungi ~ fumigation, data = sample_metadata)
+krusal_result
+```
+
+```{r}
+# dunns test for fumigation status
+dunn_test_result = dunn.test(sample_metadata$shannon_fungi, sample_metadata$fumigation, method = "bonferroni")
+dunn_test_result
+```
+
 ```{r}
 # ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
 #   geom_boxplot() +
@@ -458,6 +472,21 @@ anova_result
 tukey_result = TukeyHSD(anova_result)
 tukey_result
 ```
+
+Non parametric test for treatment
+
+```{r}
+# Kruksal-Wallis test for fumigation status
+krusal_result = kruskal.test(shannon_fungi ~ Treatment, data = sample_metadata_treat)
+krusal_result
+```
+
+```{r}
+# dunns test for fumigation status
+dunn_test_result = dunn.test(sample_metadata_treat$shannon_fungi, sample_metadata_treat$Treatment, method = "bonferroni")
+dunn_test_result
+```
+
 
 ```{r}
 # Creating labels for each group
