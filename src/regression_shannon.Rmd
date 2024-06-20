@@ -158,6 +158,11 @@ p_fumigation_b <- ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
 print(p_fumigation_b)
 ```
 
+```{r}
+# save plot as pdf
+ggsave("shannon_fumigation_bacteria.pdf", p_fumigation_b)
+```
+
 
 
 First fit the linear regression for alpha diversity (shannon) and fumigation status.
@@ -252,6 +257,11 @@ p_treatment_b <- ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
 
 # Print the plot
 print(p_treatment_b)
+```
+
+```{r}
+# save plot as pdf
+ggsave("shannon_treatment_bacteria.pdf", p_treatment_b)
 ```
 
 Linear Model for treatment and alpha diversity (shannon)
@@ -431,6 +441,10 @@ p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
 print(p_fumigation_f)
 ```
 
+```{r}
+# save plot as pdf
+ggsave("shannon_fumigation_fungi.pdf", p_fumigation_f)
+```
 
 
 
@@ -522,6 +536,11 @@ p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon_fungi)
 
 # Print the plot
 print(p_treatment_f)
+```
+
+```{r}
+# save plot as pdf
+ggsave("shannon_treatment_fungi.pdf", p_treatment_f)
 ```
 
 # boxplot for alpha diversity by treatment
