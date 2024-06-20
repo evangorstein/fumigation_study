@@ -17,6 +17,7 @@ library(dplyr)
 library(stringr)
 library(lmtest)
 library(sandwich)
+library(dunn.test)
 ```
 
 ## Background
@@ -124,11 +125,25 @@ tukey_result = TukeyHSD(anova_result)
 tukey_result
 ```
 
+Non-parametric test for fumigation status
+
+```{r}
+# Kruskal-Wallis test for fumigation status
+kruskal_result = kruskal.test(inv_simpson ~ fumigation, data = sample_metadata)
+kruskal_result
+```
+
+```{r}
+# dunn-test for fumigation status
+dunn_test_result = dunn.test(sample_metadata$inv_simpson, sample_metadata$fumigation, method = "bonferroni")
+dunn_test_result 
+```
+
 ```{r}
 # Creating labels for each group
-labels_fumigation_b <- c("never" = "a",  # Base group
-            "past" = "a",   # Not significantly different from base
-            "recent" = "b") # Significantly different from base
+labels_fumigation_b <- c("never" = "b",  # Base group
+            "past" = "b",   # Not significantly different from base
+            "recent" = "a") # Significantly different from base
 
 ```
 
@@ -164,6 +179,11 @@ p_fumigation_b <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson)) +
 print(p_fumigation_b)
 ```
 
+```{r}
+# save the plot
+ggsave("simpson_fumigation_bacteria.pdf", p_fumigation_b)
+```
+
 ## Linear Model for Treatment
 
 ```{r}
@@ -183,6 +203,20 @@ anova_result_treat
 #TukeyHSD for treatment
 tukey_result_treat = TukeyHSD(anova_result_treat)
 tukey_result_treat
+```
+
+Non parametric test for treatment
+
+```{r}
+# Kruskal-Wallis test for treatment
+kruskal_result_treat = kruskal.test(inv_simpson ~ Treatment, data = sample_metadata_treat)
+kruskal_result_treat
+```
+
+```{r}
+# dunn-test for treatment
+dunn_test_result_treat = dunn.test(sample_metadata_treat$inv_simpson, sample_metadata_treat$Treatment, method = "bonferroni")
+dunn_test_result_treat
 ```
 
 ```{r}
@@ -226,6 +260,11 @@ print(p_treatment_b)
 #   geom_boxplot() +
 #   theme_minimal() +
 #   labs(title="Alpha-Diversity (inv_simpson) by Treatment", x="Treatment", y="Alpha-Diversity (inv_simpson)")
+```
+
+```{r}
+# save the plot
+ggsave("simpson_treatment_bacteria.pdf", p_treatment_b)
 ```
 
 Linear Model for treatment and alpha diversity (inv_simpson)
@@ -364,10 +403,22 @@ tukey_result
 ```
 
 ```{r}
+# kruskal test for fumigation status
+kruskal_result = kruskal.test(inv_simpson_fungi ~ fumigation, data = sample_metadata)
+kruskal_result
+```
+
+```{r}
+# dunn-test for fumigation status
+dunn_test_result = dunn.test(sample_metadata$inv_simpson_fungi, sample_metadata$fumigation, method = "bonferroni")
+dunn_test_result
+```
+
+```{r}
 # Creating labels for each group
 labels_fumigation_f <- c("never" = "a",  # Base group
             "past" = "b",   # Not significantly different from base
-            "recent" = "a") # Significantly different from base
+            "recent" = "ab") # Significantly different from base
 
 ```
 
@@ -396,6 +447,11 @@ p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)
 
 # Print the plot
 print(p_fumigation_f)
+```
+
+```{r}
+# save the plot
+ggsave("simpson_fumigation_fungi.pdf", p_fumigation_f)
 ```
 
 ```{r}
@@ -447,6 +503,20 @@ tukey_result = TukeyHSD(sample_metadata_treat)
 tukey_result
 ```
 
+Non-parametric test for treatment
+
+```{r}
+# Kruskal-Wallis test for fumigation status
+kruskal_result_treat = kruskal.test(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
+kruskal_result_treat
+```
+
+```{r}
+# dunn-test for fumigation status
+dunn_test_result_treat = dunn.test(sample_metadata_treat$inv_simpson_fungi, sample_metadata_treat$Treatment, method = "bonferroni")
+dunn_test_result_treat
+```
+
 ```{r}
 # Creating labels for each group
 labels_treatment_f <- c("Mirimichi+Biosolids" = "a",  # Base group
@@ -481,6 +551,11 @@ p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson_fu
 
 # Print the plot
 print(p_treatment_f)
+```
+
+```{r}
+# save the plot
+ggsave("simpson_treatment_fungi.pdf", p_treatment_f)
 ```
 
 ```{r}
