@@ -352,7 +352,7 @@ plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
                       rowname = FALSE, 
                       title = "Log ratio normalized abundances", 
-                      xlabel = "Fumigation status", 
+                      xlabel = "Samples Grouped by Time",  
                       ylabel = "All 12 fungal phylums"
 )
 dev.off()
@@ -361,7 +361,7 @@ pdf(here("plots_new", "fung_heatmap2_avg.pdf"))
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
                            title = "Log ratio normalized abundances", 
-                           xlabel = "Fumigation status", 
+                           xlabel = "Samples Grouped by Time", 
                            ylabel = "10 most abundant fungal phylums"
 )
 dev.off()
@@ -370,7 +370,7 @@ pdf(here("plots_new", "fung_heatmap3_avg.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
                             title = "Log ratio normalized abundances", 
-                            xlabel = "Fumigation status", 
+                            xlabel = "Samples Grouped by Time", 
                             ylabel = "4 most abundant fungal phylums"
 )
 dev.off()
@@ -581,7 +581,7 @@ plt2 = create_heatmap(heatmapdata.genus.lr,
                       annotation = annotation_df,
                       rowname = FALSE, 
                       title = "Log ratio normalized abundances", 
-                      xlabel = "Fumigation status", 
+                      xlabel = "Samples Grouped by Time", 
                       ylabel = "All 408 fungal genuses"
 )
 dev.off()
@@ -590,7 +590,7 @@ pdf(here("plots_new", "fung_heatmap2_avg_genus.pdf"))
 plt2.filt = create_heatmap(heatmapdata.genus.lr.filt,
                            annotation = annotation_df,
                            title = "Log ratio normalized abundances", 
-                           xlabel = "Fumigation status", 
+                           xlabel = "Samples Grouped by Time", 
                            ylabel = "68 most abundant fungal genuses"
 )
 dev.off()
@@ -599,7 +599,7 @@ pdf(here("plots_new", "fung_heatmap3_avg_genus.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.genus.lr.harsh,
                             annotation = annotation_df,
                             title = "Log ratio normalized abundances", 
-                            xlabel = "Fumigation status", 
+                            xlabel = "Samples Grouped by Time", 
                             ylabel = "22 most abundant fungal genuses"
 )
 dev.off()
