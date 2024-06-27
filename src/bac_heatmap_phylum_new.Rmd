@@ -194,7 +194,7 @@ create_heatmap = function(df, annotation = NULL,
 pdf(here("plots", "bacteria_heatmap1.pdf"))
 plt1 = create_heatmap(phylum.lr,
                       annotation = samp_annotation,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples 1-240", 
                       ylabel = "All 43 bacterial phyla"
@@ -204,6 +204,7 @@ dev.off()
 pdf(here("plots", "bacteria_heatmap2.pdf"))
 plt1.filt = create_heatmap(phylum.lr.filt,
                            annotation = samp_annotation,
+                           rowname = TRUE,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples 1-240", 
                            ylabel = "26 most abundant bacterial phyla"
@@ -213,6 +214,7 @@ dev.off()
 pdf(here("plots", "bacteria_heatmap3.pdf"))
 plt1.harsh = create_heatmap(phylum.lr.harsh,
                             annotation = samp_annotation,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples 1-240", 
                             ylabel = "14 most abundant bacterial phyla"
@@ -396,7 +398,7 @@ Plotting the heatmap.
 pdf(here("plots_new", "bacteria_heatmap1_avg.pdf"))
 plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples grouped by time", 
                       ylabel = "All 43 bacterial phyla"
@@ -406,6 +408,7 @@ dev.off()
 pdf(here("plots_new", "bacteria_heatmap2_avg.pdf"))
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
+                           rowname = TRUE,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples grouped by time", 
                            ylabel = "26 most abundant bacterial phyla"
@@ -415,6 +418,7 @@ dev.off()
 pdf(here("plots_new", "bacteria_heatmap3_avg.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples grouped by time",  
                             ylabel = "14 most abundant bacterial phyla"
@@ -771,7 +775,7 @@ Plotting the heatmap.
 pdf(here("plots_new", "bacteria_heatmap1_avg_fam.pdf"))
 plt2 = create_heatmap(heatmapdata.fam.lr,
                       annotation = annotation_df,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples Grouped by Time", 
                       ylabel = "All 295 bacterial families"
@@ -781,6 +785,7 @@ dev.off()
 pdf(here("plots_new", "bacteria_heatmap2_avg_fam.pdf"))
 plt2.filt = create_heatmap(heatmapdata.fam.lr.filt,
                            annotation = annotation_df,
+                           rowname = TRUE,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples Grouped by Time",  
                            ylabel = "152 most abundant bacterial families"
@@ -790,6 +795,7 @@ dev.off()
 pdf(here("plots_new", "bacteria_heatmap3_avg_fam.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.fam.lr.harsh,
                             annotation = annotation_df,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples Grouped by Time", 
                             ylabel = "73 most abundant bacterial families"

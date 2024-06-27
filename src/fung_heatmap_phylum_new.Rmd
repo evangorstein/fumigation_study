@@ -194,7 +194,7 @@ create_heatmap = function(df, annotation = NULL,
 pdf(here("plots", "fung_heatmap1.pdf"))
 plt1 = create_heatmap(phylum.lr,
                       annotation = samp_annotation,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples 1-240", 
                       ylabel = "All 12 fungal phyla"
@@ -205,6 +205,7 @@ pdf(here("plots", "fung_heatmap2.pdf"))
 plt1.filt = create_heatmap(phylum.lr.filt,
                            annotation = samp_annotation,
                            title = "Log ratio normalized abundances", 
+                           rowname = TRUE,
                            xlabel = "Samples 1-240", 
                            ylabel = "10 most abundant fungal phyla"
 )
@@ -213,6 +214,7 @@ dev.off()
 pdf(here("plots", "fung_heatmap3.pdf"))
 plt1.harsh = create_heatmap(phylum.lr.harsh,
                             annotation = samp_annotation,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples 1-240", 
                             ylabel = "4 most abundant fungal phyla"
@@ -396,7 +398,7 @@ Plotting the heatmap.
 pdf(here("plots_new", "fung_heatmap1_avg.pdf"))
 plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples grouped by gime",  
                       ylabel = "All 12 fungal phyla"
@@ -406,6 +408,7 @@ dev.off()
 pdf(here("plots_new", "fung_heatmap2_avg.pdf"))
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
+                           rowname = TRUE,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples grouped by time", 
                            ylabel = "10 most abundant fungal phyla"
@@ -415,6 +418,7 @@ dev.off()
 pdf(here("plots_new", "fung_heatmap3_avg.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples grouped by time", 
                             ylabel = "4 most abundant fungal phyla"
@@ -625,7 +629,7 @@ Plotting the heatmap.
 pdf(here("plots_new", "fung_heatmap1_avg_genus.pdf"))
 plt2 = create_heatmap(heatmapdata.genus.lr,
                       annotation = annotation_df,
-                      rowname = FALSE, 
+                      rowname = TRUE, 
                       title = "Log ratio normalized abundances", 
                       xlabel = "Samples Grouped by Time", 
                       ylabel = "All 408 fungal genuses"
@@ -635,6 +639,7 @@ dev.off()
 pdf(here("plots_new", "fung_heatmap2_avg_genus.pdf"))
 plt2.filt = create_heatmap(heatmapdata.genus.lr.filt,
                            annotation = annotation_df,
+                           rowname = TRUE,
                            title = "Log ratio normalized abundances", 
                            xlabel = "Samples Grouped by Time", 
                            ylabel = "68 most abundant fungal genuses"
@@ -644,6 +649,7 @@ dev.off()
 pdf(here("plots_new", "fung_heatmap3_avg_genus.pdf"))
 plt2.harsh = create_heatmap(heatmapdata.genus.lr.harsh,
                             annotation = annotation_df,
+                            rowname = TRUE,
                             title = "Log ratio normalized abundances", 
                             xlabel = "Samples Grouped by Time", 
                             ylabel = "22 most abundant fungal genuses"
