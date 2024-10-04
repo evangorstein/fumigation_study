@@ -148,11 +148,17 @@ label_data_fumigation_b$max_y <- label_data_fumigation_b$max_y * 1
 p_fumigation_b <- ggplot(sample_metadata, aes(x=fumigation, y=shannon)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (Shannon) by Fumigation Status",
-       x="Fumigation Status", y="Alpha-Diversity (Shannon)") +
+  labs(x="Fumigation Status", y="Alpha-Diversity (Shannon)") +
   geom_text(data = label_data_fumigation_b,
             aes(x = fumigation, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 30, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 # Print the plot
 print(p_fumigation_b)
@@ -248,11 +254,17 @@ label_data_treatment_b$max_y <- label_data_treatment_b$max_y * 1
 p_treatment_b <- ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (Shannon) by Treatment",
-       x="Treatment", y="Alpha-Diversity (Shannon)") +
+  labs(x="Treatment", y="Alpha-Diversity (Shannon)") +
   geom_text(data = label_data_treatment_b,
             aes(x = Treatment, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 30, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 
 # Print the plot
@@ -431,12 +443,17 @@ label_data_fumigation_f$max_y <- label_data_fumigation_f$max_y * 1
 p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=shannon_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (Shannon) for Fungi by Fumigation Status",
-       x="Fumigation Status", y="Alpha-Diversity (Shannon)") +
+  labs(x="Fumigation Status", y="Alpha-Diversity (Shannon)") +
   geom_text(data = label_data_fumigation_f,
             aes(x = fumigation, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) 
-
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) + 
+           theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 30, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 # Print the plot
 print(p_fumigation_f)
 ```
@@ -528,11 +545,17 @@ label_data_treatment_f$max_y <- label_data_treatment_f$max_y * 1
 p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=shannon_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (Shannon) for Fungi by Treatment",
-       x="Treatment", y="Alpha-Diversity (Shannon)") +
+  labs(x="Treatment", y="Alpha-Diversity (Shannon)") +
   geom_text(data = label_data_treatment_f,
             aes(x = Treatment, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+           theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 30, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 # Print the plot
 print(p_treatment_f)
