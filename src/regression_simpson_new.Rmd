@@ -169,11 +169,17 @@ label_data_fumigation_b$max_y <- label_data_fumigation_b$max_y * 1
 p_fumigation_b <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (inv_simpson) by Fumigation Status",
-       x="Fumigation Status", y="Alpha-Diversity (inv_simpson)") +
+  labs(x = NULL, y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_fumigation_b,
             aes(x = fumigation, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 # Print the plot
 print(p_fumigation_b)
@@ -245,11 +251,17 @@ label_data_treatment_b$max_y <- label_data_treatment_b$max_y * 1
 p_treatment_b <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (inv_simpson) by Treatment",
-       x="Treatment", y="Alpha-Diversity (inv_simpson)") +
+  labs(x = NULL, y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_treatment_b,
             aes(x = Treatment, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 15),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 
 # Print the plot
@@ -439,11 +451,17 @@ label_data_fumigation_f$max_y <- label_data_fumigation_f$max_y * 1
 p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (inv_simpson) for Fungi by Fumigation Status",
-       x="Fumigation Status", y="Alpha-Diversity (inv_simpson)") +
+  labs(x = NULL,y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_fumigation_f,
             aes(x = fumigation, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) 
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 23),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  ) 
 
 # Print the plot
 print(p_fumigation_f)
@@ -543,11 +561,17 @@ label_data_treatment_f$max_y <- label_data_treatment_f$max_y * 1
 p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(title="Alpha-Diversity (inv_simpson) for Fungi by Treatment",
-       x="Treatment", y="Alpha-Diversity (inv_simpson)") +
+  labs(x = NULL, y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_treatment_f,
             aes(x = Treatment, y = max_y, label = label),
-            position = position_dodge(width = 0.75), vjust = -0.5, size = 10)
+            position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
+            theme(
+    plot.title = element_text(size = 25),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 15),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
 # Print the plot
 print(p_treatment_f)
@@ -619,4 +643,32 @@ model_treat = lm(inv_simpson_fungi ~ Treatment, data = sample_metadata_treat)
 
 # compare the two models using anova
 waldtest(model_treat, model_treat_fum, vcov = vcovHC)
+```
+
+
+# A plot that combines all 4 subplots
+
+```{r}
+# Create a combined plot with ggarrange
+# Load the grid package
+library(grid)
+
+# Assuming your plots are stored in these variables
+# p_fumigation_b, p_treatment_b, p_fumigation_f, p_treatment_f
+
+# Create a layout for a 2x2 grid
+pdf("plots_new/combined_plots_simpson.pdf", width = 14, height = 10)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2, 2)))
+
+# Function to define the position of each plot
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+
+# Print each plot in the specified position
+print(p_fumigation_b, vp = vplayout(1, 1))
+print(p_treatment_b, vp = vplayout(1, 2))
+print(p_fumigation_f, vp = vplayout(2, 1))
+print(p_treatment_f, vp = vplayout(2, 2))
+
+dev.off()
 ```
