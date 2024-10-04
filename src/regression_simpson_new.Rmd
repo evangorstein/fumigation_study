@@ -451,7 +451,7 @@ label_data_fumigation_f$max_y <- label_data_fumigation_f$max_y * 1
 p_fumigation_f <- ggplot(sample_metadata, aes(x=fumigation, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(x = NULL,y="Alpha-Diversity (Inverse Simpson)") +
+  labs(x = "Fumigation Status",y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_fumigation_f,
             aes(x = fumigation, y = max_y, label = label),
             position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
@@ -561,7 +561,7 @@ label_data_treatment_f$max_y <- label_data_treatment_f$max_y * 1
 p_treatment_f <- ggplot(sample_metadata_treat, aes(x=Treatment, y=inv_simpson_fungi)) +
   geom_boxplot() +
   theme_minimal() +
-  labs(x = NULL, y="Alpha-Diversity (Inverse Simpson)") +
+  labs(x = "Treatment", y="Alpha-Diversity (Inverse Simpson)") +
   geom_text(data = label_data_treatment_f,
             aes(x = Treatment, y = max_y, label = label),
             position = position_dodge(width = 0.75), vjust = -0.5, size = 10) +
@@ -580,7 +580,7 @@ print(p_treatment_f)
 ```{r}
 # save the plot
 ggsave("simpson_treatment_fungi.pdf", p_treatment_f)
-```
+  ```
 
 ```{r}
 # filter out samples that is not fumigated
