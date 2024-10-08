@@ -111,11 +111,19 @@ phylum.smooth = phylum.mat + 0.5
 phylum.filt.smooth = phylum.filt + 0.5
 phylum.filt.harsh.smooth = phylum.filt.harsh + 0.5
 
+# phylum.smooth = phylum.mat + 0
+# phylum.filt.smooth = phylum.filt + 0
+# phylum.filt.harsh.smooth = phylum.filt.harsh + 0
+
+# phylum.lr = phylum.smooth
+# phylum.lr.filt = phylum.filt.smooth
+# phylum.lr.harsh = phylum.filt.harsh.smooth
+
 phylum.lr = t( log(t(phylum.smooth) / phylum.smooth["Unknown_Phylum",]) )
 phylum.lr.filt = t( log(t(phylum.filt.smooth) / phylum.filt.smooth["Unknown_Phylum",]) )
 phylum.lr.harsh = t( log(t(phylum.filt.harsh.smooth) / phylum.filt.harsh.smooth["Unknown_Phylum",]) )
 
-# #Now that we've normalized, safe to get rid of "Unknown_Family"
+# # #Now that we've normalized, safe to get rid of "Unknown_Family"
 phylum.lr = phylum.lr[rownames(phylum.lr)!="Unknown_Phylum",]
 phylum.lr.filt = phylum.lr.filt[rownames(phylum.lr.filt)!="Unknown_Phylum",]
 phylum.lr.harsh = phylum.lr.harsh[rownames(phylum.lr.harsh)!="Unknown_Phylum",]
@@ -191,35 +199,35 @@ create_heatmap = function(df, annotation = NULL,
   return (heatmap)
 }
 
-pdf(here("plots", "bacteria_heatmap1.pdf"))
-plt1 = create_heatmap(phylum.lr,
-                      annotation = samp_annotation,
-                      rowname = TRUE, 
-                      title = "Log ratio normalized abundances", 
-                      xlabel = "Samples 1-240", 
-                      ylabel = "All 43 bacterial phyla"
-)
-dev.off()
+# pdf(here("plots", "bacteria_heatmap1.pdf"))
+# plt1 = create_heatmap(phylum.lr,
+#                       annotation = samp_annotation,
+#                       rowname = TRUE, 
+#                       title = "Log ratio normalized abundances", 
+#                       xlabel = "Samples 1-240", 
+#                       ylabel = "All 43 bacterial phyla"
+# )
+# dev.off()
 
-pdf(here("plots", "bacteria_heatmap2.pdf"))
-plt1.filt = create_heatmap(phylum.lr.filt,
-                           annotation = samp_annotation,
-                           rowname = TRUE,
-                           title = "Log ratio normalized abundances", 
-                           xlabel = "Samples 1-240", 
-                           ylabel = "26 most abundant bacterial phyla"
-)
-dev.off()
+# pdf(here("plots", "bacteria_heatmap2.pdf"))
+# plt1.filt = create_heatmap(phylum.lr.filt,
+#                            annotation = samp_annotation,
+#                            rowname = TRUE,
+#                            title = "Log ratio normalized abundances", 
+#                            xlabel = "Samples 1-240", 
+#                            ylabel = "26 most abundant bacterial phyla"
+# )
+# dev.off()
 
-pdf(here("plots", "bacteria_heatmap3.pdf"))
-plt1.harsh = create_heatmap(phylum.lr.harsh,
-                            annotation = samp_annotation,
-                            rowname = TRUE,
-                            title = "Log ratio normalized abundances", 
-                            xlabel = "Samples 1-240", 
-                            ylabel = "14 most abundant bacterial phyla"
-)
-dev.off()
+# pdf(here("plots", "bacteria_heatmap3.pdf"))
+# plt1.harsh = create_heatmap(phylum.lr.harsh,
+#                             annotation = samp_annotation,
+#                             rowname = TRUE,
+#                             title = "Log ratio normalized abundances", 
+#                             xlabel = "Samples 1-240", 
+#                             ylabel = "14 most abundant bacterial phyla"
+# )
+# dev.off()
 
 ```
 
@@ -358,35 +366,38 @@ Now we save the heatmap data to csv file with a new column for OTU's average cou
 
 ```{r}
 # no filter
-heatmapdata.phylum.lr = as.data.frame(heatmapdata.phylum.lr)
+#heatmapdata.phylum.lr = as.data.frame(heatmapdata.phylum.lr)
 heatmapdata.phylum.lr$never_average = rowMeans(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr$recent_average = rowMeans(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr$past_average = rowMeans(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
 heatmapdata.phylum.lr$never_total = rowSums(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr$recent_total = rowSums(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr$past_total = rowSums(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+row.names(heatmapdata.phylum.lr) = all_otus.phylum.lr
 
 write.csv(heatmapdata.phylum.lr, here("data", "clean", "bact_phylum_heatmapdata.csv"), row.names = TRUE)
 
 # filter 1
-heatmapdata.phylum.lr.filt = as.data.frame(heatmapdata.phylum.lr.filt)
+#heatmapdata.phylum.lr.filt = as.data.frame(heatmapdata.phylum.lr.filt)
 heatmapdata.phylum.lr.filt$never_average = rowMeans(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr.filt$recent_average = rowMeans(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr.filt$past_average = rowMeans(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
 heatmapdata.phylum.lr.filt$never_total = rowSums(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr.filt$recent_total = rowSums(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr.filt$past_total = rowSums(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+row.names(heatmapdata.phylum.lr.filt) = all_otus.phylum.lr.filt
 
 write.csv(heatmapdata.phylum.lr.filt, here("data", "clean", "bact_phylum_heatmapdata_filt.csv"), row.names = TRUE)
 
 # filter 2
-heatmapdata.phylum.lr.harsh = as.data.frame(heatmapdata.phylum.lr.harsh)
+#heatmapdata.phylum.lr.harsh = as.data.frame(heatmapdata.phylum.lr.harsh)
 heatmapdata.phylum.lr.harsh$never_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr.harsh$recent_average = rowMeans(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr.harsh$past_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
 heatmapdata.phylum.lr.harsh$never_total = rowSums(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
 heatmapdata.phylum.lr.harsh$recent_total = rowSums(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
 heatmapdata.phylum.lr.harsh$past_total = rowSums(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+row.names(heatmapdata.phylum.lr.harsh) = all_otus.phylum.lr.harsh
 
 write.csv(heatmapdata.phylum.lr.harsh, here("data", "clean", "bact_phylum_heatmapdata_filt_harsh.csv"), row.names = TRUE)
 
@@ -395,33 +406,30 @@ write.csv(heatmapdata.phylum.lr.harsh, here("data", "clean", "bact_phylum_heatma
 Plotting the heatmap.
 
 ```{r}
-pdf(here("plots_new", "bacteria_heatmap1_avg.pdf"))
+png(here("plots_revised", "bacteria_heatmap1_avg.png"), width = 2000, height = 1500, res = 300)
 plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
                       rowname = TRUE, 
-                      title = "Log ratio normalized abundances", 
-                      xlabel = "Samples grouped by time", 
-                      ylabel = "All 43 bacterial phyla"
+                      ylabel = "All 43 bacterial phyla",
+                      title = ''
 )
 dev.off()
 
-pdf(here("plots_new", "bacteria_heatmap2_avg.pdf"))
+png(here("plots_revised", "bacteria_heatmap2_avg.png"), width = 2000, height = 1500, res = 300)
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
-                           title = "Log ratio normalized abundances", 
-                           xlabel = "Samples grouped by time", 
-                           ylabel = "26 most abundant bacterial phyla"
+                           ylabel = "26 most abundant bacterial phyla",
+                           title = ''
 )
 dev.off()
 
-pdf(here("plots_new", "bacteria_heatmap3_avg.pdf"))
+png(here("plots_revised", "bacteria_heatmap3_avg.png"), width = 2000, height = 1500, res = 300)
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
-                            title = "Log ratio normalized abundances", 
-                            xlabel = "Samples grouped by time",  
-                            ylabel = "14 most abundant bacterial phyla"
+                            ylabel = "14 most abundant bacterial phyla",
+                            title = ''
 )
 dev.off()
 ```
@@ -772,33 +780,30 @@ row.names(heatmapdata.fam.lr.harsh) = all_otus.fam.lr.harsh
 Plotting the heatmap.
 
 ```{r}
-pdf(here("plots_new", "bacteria_heatmap1_avg_fam.pdf"))
+png(here("plots_revised", "bacteria_heatmap1_avg_fam.png"), width = 2000, height = 1500, res = 300)
 plt2 = create_heatmap(heatmapdata.fam.lr,
                       annotation = annotation_df,
                       rowname = TRUE, 
-                      title = "Log ratio normalized abundances", 
-                      xlabel = "Samples Grouped by Time", 
-                      ylabel = "All 295 bacterial families"
+                      ylabel = "All 295 bacterial families",
+                      title = ''
 )
 dev.off()
 
-pdf(here("plots_new", "bacteria_heatmap2_avg_fam.pdf"))
+png(here("plots_revised", "bacteria_heatmap2_avg_fam.png"), width = 2000, height = 1500, res = 300)
 plt2.filt = create_heatmap(heatmapdata.fam.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
-                           title = "Log ratio normalized abundances", 
-                           xlabel = "Samples Grouped by Time",  
-                           ylabel = "152 most abundant bacterial families"
+                           ylabel = "152 most abundant bacterial families",
+                           title = ''
 )
 dev.off()
 
-pdf(here("plots_new", "bacteria_heatmap3_avg_fam.pdf"))
+png(here("plots_revised", "bacteria_heatmap3_avg_fam.png"), width = 2000, height = 1500, res = 300)
 plt2.harsh = create_heatmap(heatmapdata.fam.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
-                            title = "Log ratio normalized abundances", 
-                            xlabel = "Samples Grouped by Time", 
-                            ylabel = "73 most abundant bacterial families"
+                            ylabel = "73 most abundant bacterial families",
+                            title = ''
 )
 dev.off()
 ```
