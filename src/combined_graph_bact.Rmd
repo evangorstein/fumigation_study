@@ -180,16 +180,18 @@ V(past.glasso)$size = degree(past.glasso)
 V(never.glasso)$clu[V(never.glasso)$degree == 0] = "999"
 V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
 V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
+```
 
+```{r}
 # Find nodes with a degree of 0 for each graph
 zero_degree_nodes_never = V(never.glasso)[degree(never.glasso) == 0]
 zero_degree_nodes_recent = V(recent.glasso)[degree(recent.glasso) == 0]
 zero_degree_nodes_past = V(past.glasso)[degree(past.glasso) == 0]
 
-# Assign these nodes to a new community cluster (e.g., cluster "new_cluster")
+# Assign these nodes to a new community cluster (cluster "999")
 V(never.glasso)[degree(never.glasso) == 0]$clu = "999"
 V(recent.glasso)[degree(recent.glasso) == 0]$clu = "999"
-V(past.glasso)[degree(past.glasso) == 0]$clu ="999"
+V(past.glasso)[degree(past.glasso) == 0]$clu = "999"
 ```
 
 Plot the network for Glasso method
@@ -218,7 +220,9 @@ plot_network = function(net, title, filter){
 #never
 plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
 plot.never.glasso
+```
 
+```{r}
 # find out largest cluster in glasso and create subgraph
 mem.never.glasso = membership(cluster_louvain(never.glasso))
 cluster.never.glasso = table(mem.never.glasso)
@@ -228,11 +232,15 @@ subvertice.never.glasso = which(mem.never.glasso == largest_cluster.never.glasso
 subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
 subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
 subplot.never.glasso
+```
 
+```{r}
 # recent
 plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
 plot.recent.glasso
+```
 
+```{r}
 mem.recent.glasso = membership(cluster_louvain(recent.glasso))
 cluster.recent.glasso = table(mem.recent.glasso)
 largest_cluster.recent.glasso = names(cluster.recent.glasso)[which.max(cluster.recent.glasso)]
@@ -241,11 +249,15 @@ subvertice.recent.glasso = which(mem.recent.glasso == largest_cluster.recent.gla
 subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glasso)
 subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
 subplot.recent.glasso
+```
 
+```{r}
 # past
 plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
 plot.past.glasso
+```
 
+```{r}
 mem.past.glasso = membership(cluster_louvain(past.glasso))
 cluster.past.glasso = table(mem.past.glasso)
 largest_cluster.past.glasso = names(cluster.past.glasso)[which.max(cluster.past.glasso)]
