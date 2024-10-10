@@ -153,7 +153,7 @@ corr_net = function(mat, cutoff){
 set scale_edge_color_discrete
 
 ```{r}
-set.seed(42)
+set.seed(3047)
 ```
 
 Plot the network - Glasso
@@ -483,7 +483,9 @@ never.corr.edge = t(apply(never.corr.edge, 1, sort))
 never.glasso.edge_df = as.data.frame(never.glasso.edge)
 never.diss.edge_df = as.data.frame(never.diss.edge)
 never.corr.edge_df = as.data.frame(never.corr.edge)
+```
 
+```{r}
 # find intersection and unions
 edges_in_all_3_never = intersect(intersect(never.glasso.edge_df, never.diss.edge_df), never.corr.edge_df)
 
@@ -525,7 +527,7 @@ V(combined_graph.never)$size = degree(combined_graph.never)
 
 ```{r}
 # Plot the first graph for never fumigated samples.
-ggraph(combined_graph.never, layout = "fr") +
+never_combined_plot =ggraph(combined_graph.never, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -535,18 +537,27 @@ ggraph(combined_graph.never, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Never Fumigated Samples")
+never_combined_plot
 
+ggsave("plot_graph/never_combined.png", never_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.never, layout = "fr") +
+never_subgraph_plot = ggraph(subgraph.never, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges in All Three Networks for Never Fumigated")
+
+never_subgraph_plot
+
+ggsave("plot_graph/never_subgraph.png", never_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Recent Network
@@ -566,7 +577,9 @@ recent.corr.edge = t(apply(recent.corr.edge, 1, sort))
 recent.glasso.edge_df = as.data.frame(recent.glasso.edge)
 recent.diss.edge_df = as.data.frame(recent.diss.edge)
 recent.corr.edge_df = as.data.frame(recent.corr.edge)
+```
 
+```{r}
 # find intersection and unions
 edges_in_all_3_recent = intersect(intersect(recent.glasso.edge_df, recent.diss.edge_df), recent.corr.edge_df)
 
@@ -606,7 +619,7 @@ V(combined_graph.recent)$size = degree(combined_graph.recent)
 
 ```{r}
 # Plot the first graph for recent fumigated samples.
-ggraph(combined_graph.recent, layout = "fr") +
+recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -616,17 +629,28 @@ ggraph(combined_graph.recent, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples")
+
+recent_combined_plot
+
+ggsave("plot_graph/recent_combined.png", recent_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.recent, layout = "fr") +
+recent_subgraph_plot = ggraph(subgraph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
+
+recent_subgraph_plot
+
+ggsave("plot_graph/recent_subgraph.png", recent_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Past Network
@@ -646,7 +670,9 @@ past.corr.edge = t(apply(past.corr.edge, 1, sort))
 past.glasso.edge_df = as.data.frame(past.glasso.edge)
 past.diss.edge_df = as.data.frame(past.diss.edge)
 past.corr.edge_df = as.data.frame(past.corr.edge)
+```
 
+```{r}
 # find intersection and unions
 edges_in_all_3_past = intersect(intersect(past.glasso.edge_df, past.diss.edge_df), past.corr.edge_df)
 
@@ -686,7 +712,7 @@ V(combined_graph.past)$size = degree(combined_graph.past)
 
 ```{r}
 # Plot the first graph for past fumigated samples.
-ggraph(combined_graph.past, layout = "fr") +
+past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -697,17 +723,27 @@ ggraph(combined_graph.past, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Past Fumigated Samples")
 
+past_combined_plot
+
+ggsave("plot_graph/past_combined.png", past_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.past, layout = "fr") +
+past_subgraph_plot = ggraph(subgraph.past, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), family = "serif", repel = TRUE, show.legend =  FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
+
+past_subgraph_plot
+
+ggsave("plot_graph/past_subgraph.png", past_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 
@@ -792,6 +828,7 @@ corr.betweenness.past = betweenness(past.corr)
 Here is boxplot for overall combined graph.
 
 ```{r}
+png("plot_graph/dg_combined_bp.png", width = 1200, height = 1000, res = 300)
 boxplot(
   degree.never, degree.recent, degree.past,
   names = c("Never", "Recent", "Past"),
@@ -799,63 +836,101 @@ boxplot(
   ylab = "Degree"
 )
 
-boxplot(
+# save the plot
+dev.off()
+```
+
+```{r}
+betweenness_combined_bp = boxplot(
   betweenness.never, betweenness.recent, betweenness.past,
   names = c("Never", "Recent", "Past"),
   main = "Betweenness Distribution for Combined Graph",
   ylab = "Betweenness"
 )
+
+betweenness_combined_bp
+
+ggsave("plot_graph/betweenness_combined_bp.png", betweenness_combined_bp, width = 12, height = 10, dpi = 300)
 ```
 
 Glasso
 ```{r}
-boxplot(
+glasso_degree_bp = boxplot(
   glasso.degree.never, glasso.degree.recent, glasso.degree.past,
   names = c("Never", "Recent", "Past"),
   main = "Degree Distribution for Glasso Network",
   ylab = "Degree"
 )
 
-boxplot(
+glasso_degree_bp
+
+ggsave("plot_graph/glasso_degree_bp.png", glasso_degree_bp, width = 12, height = 10, dpi = 300)
+```
+```{r}
+glasso_betweenness_bp = boxplot(
   glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past,
   names = c("Never", "Recent", "Past"),
   main = "Betweenness Distribution for Glasso Network",
   ylab = "Betweenness"
 )
+
+glasso_betweenness_bp
+
+ggsave("plot_graph/glasso_betweenness_bp.png", glasso_betweenness_bp, width = 12, height = 10, dpi = 300)
 ```
 
 Dissimilarity
 ```{r}
-boxplot(
+diss_degree_bp = boxplot(
   diss.degree.never, diss.degree.recent, diss.degree.past,
   names = c("Never", "Recent", "Past"),
   main = "Degree Distribution for Dissimilarity Network",
   ylab = "Degree"
 )
 
-boxplot(
+diss_degree_bp
+
+ggsave("plot_graph/diss_degree_bp.png", diss_degree_bp, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
+diss_betweenness_bp = boxplot(
   diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past,
   names = c("Never", "Recent", "Past"),
   main = "Betweenness Distribution for Dissimilarity Network",
   ylab = "Betweenness"
 )
+
+diss_betweenness_bp
+
+ggsave("plot_graph/diss_betweenness_bp.png", diss_betweenness_bp, width = 12, height = 10, dpi = 300)
 ```
 
 Correlation
 ```{r}
-boxplot(
+corr_degree_bp = boxplot(
   corr.degree.never, corr.degree.recent, corr.degree.past,
   names = c("Never", "Recent", "Past"),
   main = "Degree Distribution for Correlation Network",
   ylab = "Degree"
 )
 
-boxplot(
+corr_degree_bp
+
+ggsave("plot_graph/corr_degree_bp.png", corr_degree_bp, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
+corr_betweenness_bp = boxplot(
   corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past,
   names = c("Never", "Recent", "Past"),
   main = "Betweenness Distribution for Correlation Network",
   ylab = "Betweenness"
 )
+
+corr_betweenness_bp
+
+ggsave("plot_graph/corr_betweenness_bp.png", corr_betweenness_bp, width = 12, height = 10, dpi = 300)
 ```
 
 TODO: we can also compare GDV in future.
