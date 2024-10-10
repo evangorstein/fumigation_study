@@ -150,6 +150,12 @@ corr_net = function(mat, cutoff){
 }
 ```
 
+set scale_edge_color_discrete
+
+```{r}
+set.seed(123)
+```
+
 Plot the network - Glasso
 
 ```{r}
@@ -208,7 +214,12 @@ plot_network = function(net, title, filter){
     scale_edge_width(range = c(0.2, 3)) +
     scale_size(range = c(1, 6)) +
     scale_fill_viridis(discrete = TRUE, option = "viridis") +
-    labs(title = title)
+    theme_void() +
+    theme(
+      legend.position = "right",
+      plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
+
+    )
 
     return(network)
 }
@@ -220,6 +231,8 @@ plot_network = function(net, title, filter){
 #never
 plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
 plot.never.glasso
+
+ggsave("plot_graph/never_glasso.png", plot.never.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
@@ -232,12 +245,16 @@ subvertice.never.glasso = which(mem.never.glasso == largest_cluster.never.glasso
 subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
 subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
 subplot.never.glasso
+
+ggsave("plot_graph/never_glasso_largest_cluster.png", subplot.never.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
 # recent
 plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
 plot.recent.glasso
+
+ggsave("plot_graph/recent_glasso.png", plot.recent.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
@@ -249,12 +266,16 @@ subvertice.recent.glasso = which(mem.recent.glasso == largest_cluster.recent.gla
 subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glasso)
 subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
 subplot.recent.glasso
+
+ggsave("plot_graph/recent_glasso_largest_cluster.png", subplot.recent.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
 # past
 plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
 plot.past.glasso
+
+ggsave("plot_graph/past_glasso.png", plot.past.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
@@ -266,6 +287,8 @@ subvertice.past.glasso = which(mem.past.glasso == largest_cluster.past.glasso)
 subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
 subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
 subplot.past.glasso
+
+ggsave("plot_graph/past_glasso_largest_cluster.png", subplot.past.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 
@@ -297,7 +320,9 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 # never
 plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.never.diss
+```
 
+```{r}
 mem.never.diss = membership(cluster_louvain(never.diss))
 cluster.never.diss = table(mem.never.diss)
 largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.diss)]
@@ -306,11 +331,15 @@ subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
 subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
 subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.never.diss
+```
 
+```{r}
 # recnt
 plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.recent.diss
+```
 
+```{r}
 mem.recent.diss = membership(cluster_louvain(recent.diss))
 cluster.recent.diss = table(mem.recent.diss)
 largest_cluster.recent.diss = names(cluster.recent.diss)[which.max(cluster.recent.diss)]
@@ -319,11 +348,15 @@ subvertice.recent.diss = which(mem.recent.diss == largest_cluster.recent.diss)
 subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
 subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.recent.diss
+```
 
+```{r}
 # past
 plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.past.diss
+```
 
+```{r}
 mem.past.diss = membership(cluster_louvain(past.diss))
 cluster.past.diss = table(mem.past.diss)
 largest_cluster.past.diss = names(cluster.past.diss)[which.max(cluster.past.diss)]
