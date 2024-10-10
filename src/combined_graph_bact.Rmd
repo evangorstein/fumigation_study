@@ -153,7 +153,7 @@ corr_net = function(mat, cutoff){
 set scale_edge_color_discrete
 
 ```{r}
-set.seed(123)
+set.seed(42)
 ```
 
 Plot the network - Glasso
@@ -320,6 +320,8 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 # never
 plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.never.diss
+
+ggsave("plot_graph/never_diss.png", plot.never.diss, width = 12, height = 10, dpi = 300)  
 ```
 
 ```{r}
@@ -331,12 +333,16 @@ subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
 subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
 subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.never.diss
+
+ggsave("plot_graph/never_diss_largest_cluster.png", subplot.never.diss, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
 # recnt
 plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.recent.diss
+
+ggsave("plot_graph/recent_diss.png", plot.recent.diss, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
@@ -348,12 +354,16 @@ subvertice.recent.diss = which(mem.recent.diss == largest_cluster.recent.diss)
 subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
 subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.recent.diss
+
+ggsave("plot_graph/recent_diss_largest_cluster.png", subplot.recent.diss, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
 # past
 plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.past.diss
+
+ggsave("plot_graph/past_diss.png", plot.past.diss, width = 12, height = 10, dpi = 300)
 ```
 
 ```{r}
@@ -365,6 +375,8 @@ subvertice.past.diss = which(mem.past.diss == largest_cluster.past.diss)
 subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
 subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.past.diss
+
+ggsave("plot_graph/past_diss_largest_cluster.png", subplot.past.diss, width = 12, height = 10, dpi = 300)
 ```
 
 Plot the network - correlation
@@ -396,6 +408,10 @@ V(past.corr)[degree(past.corr) == 0]$clu <- "999"
 plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
 plot.never.corr
 
+ggsave("plot_graph/never_corr.png", plot.never.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.never.corr = membership(cluster_louvain(never.corr))
 cluster.never.corr = table(mem.never.corr)
 largest_cluster.never.corr = names(cluster.never.corr)[which.max(cluster.never.corr)]
@@ -405,10 +421,18 @@ subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
 subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
 subplot.never.corr
 
+ggsave("plot_graph/never_corr_largest_cluster.png", subplot.never.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # recent
 plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
 plot.recent.corr
 
+ggsave("plot_graph/recent_corr.png", plot.recent.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.recent.corr = membership(cluster_louvain(recent.corr))
 cluster.recent.corr = table(mem.recent.corr)
 largest_cluster.recent.corr = names(cluster.recent.corr)[which.max(cluster.recent.corr)]
@@ -418,11 +442,19 @@ subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
 subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
 subplot.recent.corr
 
+ggsave("plot_graph/recent_corr_largest_cluster.png", subplot.recent.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 #past
 
 plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
 plot.past.corr
 
+ggsave("plot_graph/past_corr.png", plot.past.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.past.corr = membership(cluster_louvain(past.corr))
 cluster.past.corr = table(mem.past.corr)
 largest_cluster.past.corr = names(cluster.past.corr)[which.max(cluster.past.corr)]
@@ -431,6 +463,8 @@ subvertice.past.corr = which(mem.past.corr == largest_cluster.past.corr)
 subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
 subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
 subplot.past.corr
+
+ggsave("plot_graph/past_corr_largest_cluster.png", subplot.past.corr, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph
