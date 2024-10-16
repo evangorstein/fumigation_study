@@ -57,6 +57,9 @@ rownames(fam.mat) = fams
 fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
 fam.mat = t(fam.mat)
 
+```
+
+```{r}
 # add sample number to metadata for each samples.
 samp_metadata = samp_metadata %>%
   mutate(fumigation = case_when(
@@ -70,6 +73,9 @@ samp_metadata = samp_metadata %>%
     TRUE ~ paste0("Samp", samp_number)
   ))
 
+```
+
+```{r}
 # pull out samples based on fumigation time
 never = samp_metadata %>% filter(fumigation == "never") %>% pull(sample_name)
 recent = samp_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
@@ -127,7 +133,6 @@ glasso_net = function(mat, rho){
 dis_net = function(mat, cutoff){
     # TODO: considering normalizing the data?
     # Normalize the data
-    mat = mat + 0.5
     mat = t(mat)
     #print(library_size)
     fam.ls = t( t(mat) / colSums(mat))
@@ -135,6 +140,8 @@ dis_net = function(mat, cutoff){
     normal_mat = t(fam.ls)
     diss.mat = as.matrix(vegdist(t(normal_mat)), method = "bray")
     diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
+    # change all NA to 1
+    diss.adj[is.na(diss.adj)] = 1
     net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
     return(net.diss)
 }
@@ -150,10 +157,10 @@ corr_net = function(mat, cutoff){
 }
 ```
 
-set scale_edge_color_discrete
+Set scale_edge_color_discrete
 
 ```{r}
-set.seed(3047)
+set.seed(3407)
 ```
 
 Plot the network - Glasso
@@ -841,6 +848,7 @@ dev.off()
 ```
 
 ```{r}
+png("plot_graph/betweenness_combined_bp.png", width = 1200, height = 1000, res = 300)
 betweenness_combined_bp = boxplot(
   betweenness.never, betweenness.recent, betweenness.past,
   names = c("Never", "Recent", "Past"),
@@ -850,11 +858,12 @@ betweenness_combined_bp = boxplot(
 
 betweenness_combined_bp
 
-ggsave("plot_graph/betweenness_combined_bp.png", betweenness_combined_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 Glasso
 ```{r}
+png("plot_graph/glasso_degree_bp.png", width = 1200, height = 1000, res = 300)
 glasso_degree_bp = boxplot(
   glasso.degree.never, glasso.degree.recent, glasso.degree.past,
   names = c("Never", "Recent", "Past"),
@@ -864,9 +873,10 @@ glasso_degree_bp = boxplot(
 
 glasso_degree_bp
 
-ggsave("plot_graph/glasso_degree_bp.png", glasso_degree_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 ```{r}
+png("plot_graph/glasso_betweenness_bp.png", width = 1200, height = 1000, res = 300)
 glasso_betweenness_bp = boxplot(
   glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past,
   names = c("Never", "Recent", "Past"),
@@ -876,11 +886,12 @@ glasso_betweenness_bp = boxplot(
 
 glasso_betweenness_bp
 
-ggsave("plot_graph/glasso_betweenness_bp.png", glasso_betweenness_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 Dissimilarity
 ```{r}
+png("plot_graph/diss_degree_bp.png", width = 1200, height = 1000, res = 300)
 diss_degree_bp = boxplot(
   diss.degree.never, diss.degree.recent, diss.degree.past,
   names = c("Never", "Recent", "Past"),
@@ -890,10 +901,11 @@ diss_degree_bp = boxplot(
 
 diss_degree_bp
 
-ggsave("plot_graph/diss_degree_bp.png", diss_degree_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 ```{r}
+png("plot_graph/diss_betweenness_bp.png", width = 1200, height = 1000, res = 300)
 diss_betweenness_bp = boxplot(
   diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past,
   names = c("Never", "Recent", "Past"),
@@ -903,11 +915,12 @@ diss_betweenness_bp = boxplot(
 
 diss_betweenness_bp
 
-ggsave("plot_graph/diss_betweenness_bp.png", diss_betweenness_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 Correlation
 ```{r}
+png("plot_graph/corr_degree_bp.png", width = 1200, height = 1000, res = 300)
 corr_degree_bp = boxplot(
   corr.degree.never, corr.degree.recent, corr.degree.past,
   names = c("Never", "Recent", "Past"),
@@ -917,10 +930,11 @@ corr_degree_bp = boxplot(
 
 corr_degree_bp
 
-ggsave("plot_graph/corr_degree_bp.png", corr_degree_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 ```{r}
+png("plot_graph/corr_betweenness_bp.png", width = 1200, height = 1000, res = 300)
 corr_betweenness_bp = boxplot(
   corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past,
   names = c("Never", "Recent", "Past"),
@@ -930,7 +944,7 @@ corr_betweenness_bp = boxplot(
 
 corr_betweenness_bp
 
-ggsave("plot_graph/corr_betweenness_bp.png", corr_betweenness_bp, width = 12, height = 10, dpi = 300)
+dev.off()
 ```
 
 TODO: we can also compare GDV in future.
