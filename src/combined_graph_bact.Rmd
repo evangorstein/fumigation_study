@@ -1098,7 +1098,10 @@ response.horse = horseshoe(response)
 ```
 
 ```{r}
+# save plot
+png("plot_graph/carlasso_plot_bact_both.png")
 plot(response.horse)
+dev.off()
 ```
 
 CARlasso for only single response
@@ -1110,8 +1113,16 @@ formula_single = as.formula(formula_single)
 
 ```{r}
 response2 = CARlasso(formula_single, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
 response2.horse = horseshoe(response2)
+```
+
+```{r}
+png("plot_graph/carlasso_plot_bact_single.png")
 plot(response2.horse)
+dev.off()
 ```
 
 CARlasso on top 10 most different taxa.
@@ -1127,8 +1138,16 @@ formula_both10 = as.formula(formula_both10)
 
 ```{r}
 response10 = CARlasso(formula_both10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
 response10.horse = horseshoe(response10)
+```
+
+```{r}
+png("plot_graph/carlasso_plot_bact_both_10.png")
 plot(response10.horse)
+dev.off()
 ```
 
 ```{r}
@@ -1138,8 +1157,16 @@ formula_single10 = as.formula(formula_single10)
 
 ```{r}
 response10_2 = CARlasso(formula_single10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
 response10_2.horse = horseshoe(response10_2)
+```
+
+```{r}
+png("plot_graph/carlasso_plot_bact_single_10.png")
 plot(response10_2.horse)
+dev.off()
 ```
 
 ## Investigation
