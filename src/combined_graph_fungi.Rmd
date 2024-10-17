@@ -53,7 +53,9 @@ genus.mat = as.matrix(genus.df[,-1])
 rownames(genus.mat) = genus
 genus.mat = genus.mat[rownames(genus.mat)!="Unknown_Genus",]
 genus.mat = t(genus.mat)
+```
 
+```{r}
 # add sample number to metadata for each samples.
 samp_metadata = samp_metadata %>%
   mutate(fumigation = case_when(
@@ -67,6 +69,9 @@ samp_metadata = samp_metadata %>%
     TRUE ~ paste0("Samp", samp_number)
   ))
 
+```
+
+```{r}
 # pull out samples based on fumigation time
 never = samp_metadata %>% filter(fumigation == "never") %>% pull(sample_name)
 recent = samp_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
@@ -131,6 +136,8 @@ dis_net = function(mat, cutoff){
     normal_mat = t(fam.ls)
     diss.mat = as.matrix(vegdist(t(normal_mat)), method = "bray")
     diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
+    # change all NA to 1
+    diss.adj[is.na(diss.adj)] = 1
     net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
     return(net.diss)
 }
@@ -145,6 +152,12 @@ corr_net = function(mat, cutoff){
     net.corr = graph.adjacency(corr.adj, mode = "undirected", diag = FALSE)
     return(net.corr)
 }
+```
+
+Set seed
+
+```{r}
+set.seed(3407)
 ```
 
 Plot the network - Glasso
@@ -177,7 +190,9 @@ V(past.glasso)$size = degree(past.glasso)
 V(never.glasso)$clu[V(never.glasso)$degree == 0] = "999"
 V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
 V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
+```
 
+```{r}
 # Find nodes with a degree of 0 for each graph
 zero_degree_nodes_never <- V(never.glasso)[degree(never.glasso) == 0]
 zero_degree_nodes_recent <- V(recent.glasso)[degree(recent.glasso) == 0]
@@ -203,7 +218,12 @@ plot_network = function(net, title, filter){
     scale_edge_width(range = c(0.2, 3)) +
     scale_size(range = c(1, 6)) +
     scale_fill_viridis(discrete = TRUE, option = "viridis") +
-    labs(title = title)
+    theme_void() +
+    theme(
+      legend.position = "right",
+      plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
+
+    )
 
     return(network)
 }
@@ -216,6 +236,10 @@ plot_network = function(net, title, filter){
 plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
 plot.never.glasso
 
+ggsave("plot_graph/never_glasso_fungi.png", plot.never.glasso, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # find out largest cluster in glasso and create subgraph
 mem.never.glasso = membership(cluster_louvain(never.glasso))
 cluster.never.glasso = table(mem.never.glasso)
@@ -226,10 +250,18 @@ subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
 subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
 subplot.never.glasso
 
+ggsave("plot_graph/never_glasso_largest_cluster_fungi.png", subplot.never.glasso, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # recent
 plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
 plot.recent.glasso
 
+ggsave("plot_graph/recent_glasso_fungi.png", plot.recent.glasso, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.recent.glasso = membership(cluster_louvain(recent.glasso))
 cluster.recent.glasso = table(mem.recent.glasso)
 largest_cluster.recent.glasso = names(cluster.recent.glasso)[which.max(cluster.recent.glasso)]
@@ -239,10 +271,18 @@ subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glass
 subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
 subplot.recent.glasso
 
+ggsave("plot_graph/recent_glasso_largest_cluster_fungi.png", subplot.recent.glasso, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # past
 plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
 plot.past.glasso
 
+ggsave("plot_graph/past_glasso_fungi.png", plot.past.glasso, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.past.glasso = membership(cluster_louvain(past.glasso))
 cluster.past.glasso = table(mem.past.glasso)
 largest_cluster.past.glasso = names(cluster.past.glasso)[which.max(cluster.past.glasso)]
@@ -251,6 +291,8 @@ subvertice.past.glasso = which(mem.past.glasso == largest_cluster.past.glasso)
 subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
 subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
 subplot.past.glasso
+
+ggsave("plot_graph/past_glasso_largest_cluster_fungi.png", subplot.past.glasso, width = 12, height = 10, dpi = 300)
 ```
 
 
@@ -283,6 +325,10 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.never.diss
 
+ggsave("plot_graph/never_diss_fungi.png", plot.never.diss, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.never.diss = membership(cluster_louvain(never.diss))
 cluster.never.diss = table(mem.never.diss)
 largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.diss)]
@@ -292,10 +338,18 @@ subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
 subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.never.diss
 
+ggsave("plot_graph/never_diss_largest_cluster_fungi.png", subplot.never.diss, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # recnt
 plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.recent.diss
 
+ggsave("plot_graph/recent_diss_fungi.png", plot.recent.diss, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.recent.diss = membership(cluster_louvain(recent.diss))
 cluster.recent.diss = table(mem.recent.diss)
 largest_cluster.recent.diss = names(cluster.recent.diss)[which.max(cluster.recent.diss)]
@@ -305,10 +359,18 @@ subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
 subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.recent.diss
 
+ggsave("plot_graph/recent_diss_largest_cluster_fungi.png", subplot.recent.diss, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # past
 plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.past.diss
 
+ggsave("plot_graph/past_diss_fungi.png", plot.past.diss, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.past.diss = membership(cluster_louvain(past.diss))
 cluster.past.diss = table(mem.past.diss)
 largest_cluster.past.diss = names(cluster.past.diss)[which.max(cluster.past.diss)]
@@ -317,6 +379,8 @@ subvertice.past.diss = which(mem.past.diss == largest_cluster.past.diss)
 subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
 subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.past.diss
+
+ggsave("plot_graph/past_diss_largest_cluster_fungi.png", subplot.past.diss, width = 12, height = 10, dpi = 300)
 ```
 
 Plot the network - correlation
@@ -348,6 +412,10 @@ V(past.corr)[degree(past.corr) == 0]$clu <- "999"
 plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
 plot.never.corr
 
+ggsave("plot_graph/never_corr_fungi.png", plot.never.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.never.corr = membership(cluster_louvain(never.corr))
 cluster.never.corr = table(mem.never.corr)
 largest_cluster.never.corr = names(cluster.never.corr)[which.max(cluster.never.corr)]
@@ -357,9 +425,18 @@ subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
 subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
 subplot.never.corr
 
+ggsave("plot_graph/never_corr_largest_cluster_fungi.png", subplot.never.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # recent
 plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
 plot.recent.corr
+
+ggsave("plot_graph/recent_corr_fungi.png", plot.recent.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 
 mem.recent.corr = membership(cluster_louvain(recent.corr))
 cluster.recent.corr = table(mem.recent.corr)
@@ -370,11 +447,19 @@ subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
 subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
 subplot.recent.corr
 
-#past
+ggsave("plot_graph/recent_corr_largest_cluster_fungi.png", subplot.recent.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
+# past
 
 plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
 plot.past.corr
 
+ggsave("plot_graph/past_corr_fungi.png", plot.past.corr, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 mem.past.corr = membership(cluster_louvain(past.corr))
 cluster.past.corr = table(mem.past.corr)
 largest_cluster.past.corr = names(cluster.past.corr)[which.max(cluster.past.corr)]
@@ -383,6 +468,8 @@ subvertice.past.corr = which(mem.past.corr == largest_cluster.past.corr)
 subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
 subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
 subplot.past.corr
+
+ggsave("plot_graph/past_corr_largest_cluster_fungi.png", subplot.past.corr, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph
@@ -408,6 +495,9 @@ edges_in_all_3_never = intersect(intersect(never.glasso.edge_df, never.diss.edge
 edge_lasso_diss_never = intersect(never.glasso.edge_df, never.diss.edge_df)
 edge_lasso_corr_never = intersect(never.glasso.edge_df, never.corr.edge_df)
 edge_diss_corr_never = intersect(never.diss.edge_df, never.corr.edge_df)
+```
+
+```{r}
 
 edges_in_2_never = unique(rbind(edge_lasso_corr_never, edge_lasso_diss_never, edge_diss_corr_never))
 edges_in_2_never = setdiff(edges_in_2_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
@@ -442,7 +532,7 @@ V(combined_graph.never)$size = degree(combined_graph.never)
 
 
 ```{r}
-ggraph(combined_graph.never, layout = "fr") +
+never_combined_plot = ggraph(combined_graph.never, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -453,17 +543,27 @@ ggraph(combined_graph.never, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Never Fumigated Samples")
 
+never_combined_plot
+
+ggsave("plot_graph/never_combined_fungi.png", never_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.never, layout = "fr") +
+never_subgraph_plot = ggraph(subgraph.never, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges in All Three Networks for Never Fumigated")
+
+never_subgraph_plot
+
+ggsave("plot_graph/never_subgraph_fungi.png", never_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Recent Network
@@ -483,7 +583,9 @@ recent.corr.edge = t(apply(recent.corr.edge, 1, sort))
 recent.glasso.edge_df = as.data.frame(recent.glasso.edge)
 recent.diss.edge_df = as.data.frame(recent.diss.edge)
 recent.corr.edge_df = as.data.frame(recent.corr.edge)
+```
 
+```{r}
 # find intersection and unions
 edges_in_all_3_recent = intersect(intersect(recent.glasso.edge_df, recent.diss.edge_df), recent.corr.edge_df)
 
@@ -523,7 +625,7 @@ V(combined_graph.recent)$size = degree(combined_graph.recent)
 
 ```{r}
 # Plot the first graph for recent fumigated samples.
-ggraph(combined_graph.recent, layout = "fr") +
+recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -533,17 +635,29 @@ ggraph(combined_graph.recent, layout = "fr") +
   scale_size(range = c(1, 6)) +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples")
+
+recent_combined_plot
+
+ggsave("plot_graph/recent_combined_fungi.png", recent_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
+
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.recent, layout = "fr") +
+recent_subgraph_plot = ggraph(subgraph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
+
+recent_subgraph_plot
+
+ggsave("plot_graph/recent_subgraph_fungi.png", recent_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Past Network
@@ -563,7 +677,9 @@ past.corr.edge = t(apply(past.corr.edge, 1, sort))
 past.glasso.edge_df = as.data.frame(past.glasso.edge)
 past.diss.edge_df = as.data.frame(past.diss.edge)
 past.corr.edge_df = as.data.frame(past.corr.edge)
+```
 
+```{r}
 # find intersection and unions
 edges_in_all_3_past = intersect(intersect(past.glasso.edge_df, past.diss.edge_df), past.corr.edge_df)
 
@@ -603,7 +719,7 @@ V(combined_graph.past)$size = degree(combined_graph.past)
 
 ```{r}
 # Plot the first graph for past fumigated samples.
-ggraph(combined_graph.past, layout = "fr") +
+past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
   scale_edge_color_manual("Edge\nWeight", 
                           values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
@@ -614,17 +730,28 @@ ggraph(combined_graph.past, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Past Fumigated Samples")
 
+past_combined_plot
+
+ggsave("plot_graph/past_combined_fungi.png", past_combined_plot, width = 12, height = 10, dpi = 300)
+```
+
+```{r}
+
 # create a subgraph with only the edges that are in all 3 networks
 subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weight == 3], delete.vertices = TRUE)
 
 # plot the subgraph
-ggraph(subgraph.past, layout = "fr") +
+past_subgraph_plot = ggraph(subgraph.past, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
   geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), family = "serif", repel = TRUE, show.legend =  FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
+
+past_subgraph_plot
+
+ggsave("plot_graph/past_subgraph_fungi.png", past_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 
@@ -709,71 +836,195 @@ corr.betweenness.past = betweenness(past.corr)
 Here is boxplot for overall combined graph.
 
 ```{r}
-boxplot(
-  degree.never, degree.recent, degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Combined Graph",
-  ylab = "Degree"
+overall_df = data.frame(
+  fumigation_status = c(rep("never", length(degree.never)), rep("recent", length(degree.recent)), rep("past", length(degree.past))),
+  degree = c(degree.never, degree.recent, degree.past)
 )
 
-boxplot(
-  betweenness.never, betweenness.recent, betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Combined Graph",
-  ylab = "Betweenness"
-)
+dg_combined_bp = ggplot(overall_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_combined_bp
+
+ggsave("plot_graph/dg_combined_bp_fungi.pdf", dg_combined_bp)
 ```
+
+```{r}
+overall_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(betweenness.never)), rep("recent", length(betweenness.recent)), rep("past", length(betweenness.past))),
+  betweenness = c(betweenness.never, betweenness.recent, betweenness.past)
+)
+
+dg_combined_betweenness_bp = ggplot(overall_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_combined_betweenness_bp
+
+ggsave("plot_graph/dg_combined_betweenness_bp_fungi.pdf", dg_combined_betweenness_bp)
+```
+
 
 Glasso
 ```{r}
-boxplot(
-  glasso.degree.never, glasso.degree.recent, glasso.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Glasso Network",
-  ylab = "Degree"
+glasso_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.degree.never)), rep("recent", length(glasso.degree.recent)), rep("past", length(glasso.degree.past))),
+  degree = c(glasso.degree.never, glasso.degree.recent, glasso.degree.past)
 )
 
-boxplot(
-  glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Glasso Network",
-  ylab = "Betweenness"
-)
+dg_glasso_bp = ggplot(glasso_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_glasso_bp  
+
+ggsave("plot_graph/dg_glasso_bp_fungi.pdf", dg_glasso_bp)
 ```
+
+```{r}
+glasso_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.betweenness.never)), rep("recent", length(glasso.betweenness.recent)), rep("past", length(glasso.betweenness.past))),
+  betweenness = c(glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past)
+)
+
+dg_glasso_betweenness_bp = ggplot(glasso_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_glasso_betweenness_bp
+
+ggsave("plot_graph/dg_glasso_betweenness_bp_fungi.pdf", dg_glasso_betweenness_bp)
+```
+
 
 Dissimilarity
 ```{r}
-boxplot(
-  diss.degree.never, diss.degree.recent, diss.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Dissimilarity Network",
-  ylab = "Degree"
+diss_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.degree.never)), rep("recent", length(diss.degree.recent)), rep("past", length(diss.degree.past))),
+  degree = c(diss.degree.never, diss.degree.recent, diss.degree.past)
 )
 
-boxplot(
-  diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Dissimilarity Network",
-  ylab = "Betweenness"
+dg_diss_bp = ggplot(diss_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_diss_bp
+
+ggsave("plot_graph/dg_diss_bp_fungi.pdf", dg_diss_bp)
+```
+
+```{r}
+diss_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.betweenness.never)), rep("recent", length(diss.betweenness.recent)), rep("past", length(diss.betweenness.past))),
+  betweenness = c(diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past)
 )
+
+dg_diss_betweenness_bp = ggplot(diss_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_diss_betweenness_bp
+
+ggsave("plot_graph/dg_diss_betweenness_bp_fungi.pdf", dg_diss_betweenness_bp)
 ```
 
 Correlation
 ```{r}
-boxplot(
-  corr.degree.never, corr.degree.recent, corr.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Correlation Network",
-  ylab = "Degree"
+corr_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.degree.never)), rep("recent", length(corr.degree.recent)), rep("past", length(corr.degree.past))),
+  degree = c(corr.degree.never, corr.degree.recent, corr.degree.past)
 )
 
-boxplot(
-  corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Correlation Network",
-  ylab = "Betweenness"
-)
+dg_corr_bp = ggplot(corr_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_corr_bp
+
+ggsave("plot_graph/dg_corr_bp_fungi.pdf", dg_corr_bp)
 ```
+
+```{r}
+corr_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.betweenness.never)), rep("recent", length(corr.betweenness.recent)), rep("past", length(corr.betweenness.past))),
+  betweenness = c(corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past)
+)
+
+dg_corr_betweenness_bp = ggplot(corr_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_corr_betweenness_bp
+
+ggsave("plot_graph/dg_corr_betweenness_bp_fungi.pdf", dg_corr_betweenness_bp)
+```
+
+
 
 TODO: we can also compare GDV in future.
 
