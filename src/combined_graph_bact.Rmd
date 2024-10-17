@@ -835,116 +835,192 @@ corr.betweenness.past = betweenness(past.corr)
 Here is boxplot for overall combined graph.
 
 ```{r}
-png("plot_graph/dg_combined_bp.png", width = 1200, height = 1000, res = 300)
-boxplot(
-  degree.never, degree.recent, degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Combined Graph",
-  ylab = "Degree"
+overall_df = data.frame(
+  fumigation_status = c(rep("never", length(degree.never)), rep("recent", length(degree.recent)), rep("past", length(degree.past))),
+  degree = c(degree.never, degree.recent, degree.past)
 )
 
-# save the plot
-dev.off()
+dg_combined_bp = ggplot(overall_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_combined_bp
+
+ggsave("plot_graph/dg_combined_bp.pdf", dg_combined_bp)
 ```
 
 ```{r}
-png("plot_graph/betweenness_combined_bp.png", width = 1200, height = 1000, res = 300)
-betweenness_combined_bp = boxplot(
-  betweenness.never, betweenness.recent, betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Combined Graph",
-  ylab = "Betweenness"
+overall_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(betweenness.never)), rep("recent", length(betweenness.recent)), rep("past", length(betweenness.past))),
+  betweenness = c(betweenness.never, betweenness.recent, betweenness.past)
 )
 
-betweenness_combined_bp
+bt_combined_bp = ggplot(overall_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+bt_combined_bp
+
+ggsave("plot_graph/bt_combined_bp.pdf", bt_combined_bp)
 ```
 
 Glasso
 ```{r}
-png("plot_graph/glasso_degree_bp.png", width = 1200, height = 1000, res = 300)
-glasso_degree_bp = boxplot(
-  glasso.degree.never, glasso.degree.recent, glasso.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Glasso Network",
-  ylab = "Degree"
+glasso_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.degree.never)), rep("recent", length(glasso.degree.recent)), rep("past", length(glasso.degree.past))),
+  degree = c(glasso.degree.never, glasso.degree.recent, glasso.degree.past)
 )
 
-glasso_degree_bp
+dg_glasso_bp = ggplot(glasso_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+dg_glasso_bp
+
+ggsave("plot_graph/dg_glasso_bp.pdf", dg_glasso_bp)
 ```
+
+
 ```{r}
-png("plot_graph/glasso_betweenness_bp.png", width = 1200, height = 1000, res = 300)
-glasso_betweenness_bp = boxplot(
-  glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Glasso Network",
-  ylab = "Betweenness"
+glasso_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.betweenness.never)), rep("recent", length(glasso.betweenness.recent)), rep("past", length(glasso.betweenness.past))),
+  betweenness = c(glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past)
 )
 
-glasso_betweenness_bp
+bt_glasso_bp = ggplot(glasso_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+bt_glasso_bp
+
+ggsave("plot_graph/bt_glasso_bp.pdf", bt_glasso_bp)
 ```
 
 Dissimilarity
 ```{r}
-png("plot_graph/diss_degree_bp.png", width = 1200, height = 1000, res = 300)
-diss_degree_bp = boxplot(
-  diss.degree.never, diss.degree.recent, diss.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Dissimilarity Network",
-  ylab = "Degree"
+diss_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.degree.never)), rep("recent", length(diss.degree.recent)), rep("past", length(diss.degree.past))),
+  degree = c(diss.degree.never, diss.degree.recent, diss.degree.past)
 )
 
-diss_degree_bp
+dg_diss_bp = ggplot(diss_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+dg_diss_bp
+
+ggsave("plot_graph/dg_diss_bp.pdf", dg_diss_bp)
 ```
 
 ```{r}
-png("plot_graph/diss_betweenness_bp.png", width = 1200, height = 1000, res = 300)
-diss_betweenness_bp = boxplot(
-  diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Dissimilarity Network",
-  ylab = "Betweenness"
+diss_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.betweenness.never)), rep("recent", length(diss.betweenness.recent)), rep("past", length(diss.betweenness.past))),
+  betweenness = c(diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past)
 )
 
-diss_betweenness_bp
+bt_diss_bp = ggplot(diss_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+bt_diss_bp
+
+ggsave("plot_graph/bt_diss_bp.pdf", bt_diss_bp)
 ```
 
 Correlation
 ```{r}
-png("plot_graph/corr_degree_bp.png", width = 1200, height = 1000, res = 300)
-corr_degree_bp = boxplot(
-  corr.degree.never, corr.degree.recent, corr.degree.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Degree Distribution for Correlation Network",
-  ylab = "Degree"
+corr_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.degree.never)), rep("recent", length(corr.degree.recent)), rep("past", length(corr.degree.past))),
+  degree = c(corr.degree.never, corr.degree.recent, corr.degree.past)
 )
 
-corr_degree_bp
+dg_corr_bp = ggplot(corr_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+dg_corr_bp
+
+ggsave("plot_graph/dg_corr_bp.pdf", dg_corr_bp)
 ```
 
+
 ```{r}
-png("plot_graph/corr_betweenness_bp.png", width = 1200, height = 1000, res = 300)
-corr_betweenness_bp = boxplot(
-  corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past,
-  names = c("Never", "Recent", "Past"),
-  main = "Betweenness Distribution for Correlation Network",
-  ylab = "Betweenness"
+corr_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.betweenness.never)), rep("recent", length(corr.betweenness.recent)), rep("past", length(corr.betweenness.past))),
+  betweenness = c(corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past)
 )
 
-corr_betweenness_bp
+bt_corr_bp = ggplot(corr_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
 
-dev.off()
+bt_corr_bp
+
+ggsave("plot_graph/bt_corr_bp.pdf", bt_corr_bp)
 ```
 
 TODO: we can also compare GDV in future.
