@@ -557,13 +557,13 @@ never_subgraph_plot = ggraph(subgraph.never, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), size = 6,family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges in All Three Networks for Never Fumigated")
 
 never_subgraph_plot
 
-ggsave("plot_graph/never_subgraph_fungi.png", never_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_1029/never_subgraph_fungi.png", never_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Recent Network
@@ -651,13 +651,13 @@ recent_subgraph_plot = ggraph(subgraph.recent, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), family = "serif", repel = TRUE, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), size = 6,family = "serif", repel = TRUE, show.legend = FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
 
 recent_subgraph_plot
 
-ggsave("plot_graph/recent_subgraph_fungi.png", recent_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_1029/recent_subgraph_fungi.png", recent_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 Combined Graph for Past Network
@@ -745,13 +745,13 @@ past_subgraph_plot = ggraph(subgraph.past, layout = "fr") +
   geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
   scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
   geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
-  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), family = "serif", repel = TRUE, show.legend =  FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), size = 6,family = "serif", repel = TRUE, show.legend =  FALSE) +
   theme_graph() +
   ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
 
 past_subgraph_plot
 
-ggsave("plot_graph/past_subgraph_fungi.png", past_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_1029/past_subgraph_fungi.png", past_subgraph_plot, width = 12, height = 10, dpi = 300)
 ```
 
 
