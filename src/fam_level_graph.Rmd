@@ -20,13 +20,41 @@ library(here)
 
 First we read in the data
 ```{r}
-asv_abundance = read.csv(here("src", "ASV_Abundance_Table.csv"))
+asv_abundance = t(read.csv(here("src", "ASV_Abundance_Table.csv")))
 taxonomy_info = read.delim(here("src", "ASV_tax_assignments.txt"), sep = "\t", header = FALSE)
 colnames(taxonomy_info) = c("ASV", "Taxanomy", "Count1", "Count2")
 ```
 
-Merge data
+Process the data
 ```{r}
-# Merge data on ASV
+# Merge data
+asv_info_row = asv_abundance[1, ]
+asv_data_row = asv_abundance[-1, ]
+colnames(asv_data_row) = asv_info_row
 ```
+
+Add family information to the data
+```{r}
+# first extract the family information from the taxonomy
+taxonomy_info$Family = sapply(taxonomy_info$Taxanomy, function(x) strsplit(x, ";")[[1]][5])
+
+# covert to data frame
+asv_data_row = as.data.frame(asv_data_row)
+asv_data_row$ASV = rownames(asv_data_row)
+# reorder the columns
+asv_data_row = asv_data_row[, c("ASV", colnames(asv_data_row))]
+rownames(asv_data_row) = NULL
+
+# add the family information to the data
+asv_data_row = asv_data_row %>% 
+  left_join(taxonomy_info, by = "ASV")
+```
+
+Remove unecessary columns
+```{r}
+asv_data_row = asv_data_row %>% 
+  select(-ASV.1, -Taxanomy, -Count1, -Count2)
+```
+
+
 
