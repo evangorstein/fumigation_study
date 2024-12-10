@@ -1,0 +1,32 @@
+---
+title: "Family Level Graph"
+author: "Tianyi Xu"
+date: "2024-12-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(here)
+```
+
+## Load data 
+
+First we read in the data
+```{r}
+asv_abundance = read.csv(here("src", "ASV_Abundance_Table.csv"))
+taxonomy_info = read.delim(here("src", "ASV_tax_assignments.txt"), sep = "\t", header = FALSE)
+colnames(taxonomy_info) = c("ASV", "Taxanomy", "Count1", "Count2")
+```
+
+Merge data
+```{r}
+# Merge data on ASV
+```
+
