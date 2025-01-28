@@ -47,3 +47,11 @@ Thumbs.db
 ####################
 .Rhistory
 .Rproj.user
+.RData
+
+# Plot Results #
+/plot_1029
+/plot_graph
+/plots
+/plots_new
+/plots_revised
