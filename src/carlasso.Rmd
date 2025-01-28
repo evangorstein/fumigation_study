@@ -1,0 +1,193 @@
+---
+title: "Network Analysis"
+author: "Tianyi Xu"
+date: "2023-06-22"
+output: html_document
+---
+
+```{r}
+library(CARlasso)
+library(tidyverse)
+library(dplyr)
+library(tidyr)
+```
+
+Data Creation
+
+Carlasso on the abundance data.
+
+```{r}
+# read in the data
+bact_df = read.csv("Bacterial.Gen.level_10.csv")
+fung_df = read.csv("Fungal.Gen.level_10.csv")
+
+# remove na
+bact_df= bact_df[, colSums(!is.na(bact_df)) > 0]
+fung_df= fung_df[, colSums(!is.na(fung_df)) > 0]
+```
+
+Make the data to expected format of carlasso.
+
+```{r}
+# transpose the data
+otus_bact = bact_df$OTU
+sample_names = colnames(bact_df)[2:7]
+otus_fung = fung_df$OTU
+
+bact_df_t = t(bact_df[, 2:7])
+fung_df_t = t(fung_df[, 2:7])
+#row.names(bact_df_t) = sample_names
+#row.names(fung_df_t) = sample_names
+colnames(bact_df_t) = otus_bact
+colnames(fung_df_t) = otus_fung
+
+# convert to dataframe
+bact_df_t = as.data.frame(bact_df_t)
+fung_df_t = as.data.frame(fung_df_t)
+
+# add disease status to each sample
+bact_df_t$disease = c(0,0,0,1,1,1)
+fung_df_t$disease = c(0,0,0,1,1,1)
+
+# convert disease to binary
+levels(bact_df_t$disease) = c(0, 1)
+levels(fung_df_t$disease) = c(0, 1)
+
+# save the data
+# write.csv(bact_df_t, "bact_df_t.csv")
+# write.csv(fung_df_t, "fung_df_t.csv")
+```
+
+Use stored data.
+
+```{r}
+# read in the data
+bact_df_t = read.csv("bact_df_t.csv")
+fung_df_t = read.csv("fung_df_t.csv")
+
+# get rid of last 4 OTUs
+bact_df_t_1 = bact_df_t[, -c(8:11)]
+fung_df_t_1 = fung_df_t[, -c(8:11)]
+
+# 2nd df get rid of first 6 OTUs
+bact_df_t_2 = bact_df_t[, -c(2:7)]
+fung_df_t_2 = fung_df_t[, -c(2:7)]
+```
+
+Normalize the data using the total sum scaling method.
+
+```{r}
+# need to remove non-numeric columns, the first and last columns
+bact_df_t_1_values = bact_df_t_1[, -c(1, 8)]
+fung_df_t_1_values = fung_df_t_1[, -c(1, 8)]
+
+bact_df_t_2_values = bact_df_t_2[, -c(1, 6)]
+fung_df_t_2_values = fung_df_t_2[, -c(1, 6)]
+
+# normalize the data
+bact_df_t_1_norm = bact_df_t_1_values / rowSums(bact_df_t_1_values)
+fung_df_t_1_norm = fung_df_t_1_values / rowSums(fung_df_t_1_values)
+
+bact_df_t_2_norm = bact_df_t_2_values / rowSums(bact_df_t_2_values)
+fung_df_t_2_norm = fung_df_t_2_values / rowSums(fung_df_t_2_values)
+
+# add back the first columns
+bact_df_t_1_norm$Samples = bact_df_t_1$Samples
+fung_df_t_1_norm$Samples = fung_df_t_1$Samples
+
+bact_df_t_2_norm$Samples = bact_df_t_2$Samples
+fung_df_t_2_norm$Samples = fung_df_t_2$Samples
+```
+
+Construct the formula for carlasso.
+
+```{r}
+otus_b_1 = colnames(bact_df_t_1_norm)[1:6]
+otus_quoted_b_1 = paste0("`", otus_b_1, "`", collapse = " + ")
+formula_b_1 = as.formula(paste(otus_quoted_b_1, " ~ Samples"))
+```
+
+# Only has 6 samples, so we only use 6 otu to do the network analysis
+
+
+```{r}
+response_b_1 = CARlasso(formula_b_1, data = bact_df_t_1_norm, link = "logit", adaptive = TRUE, n_iter = 2000)
+```
+
+```{r}
+response_b_1.horse = horseshoe(response_b_1)
+```
+
+```{r}
+# save the plot
+pdf("bacterial_network_6.pdf")
+plot(response_b_1.horse)
+dev.off()
+```
+
+Do the same for the 2nd bacterial dataset.
+
+```{r}
+otus_b_2 = colnames(bact_df_t_2_norm)[1:4]
+otus_quoted_b_2 = paste0("`", otus_b_2, "`", collapse = " + ")
+formula_b_2 = as.formula(paste(otus_quoted_b_2, " ~ Samples"))
+```
+
+```{r}
+response_b_2 = CARlasso(formula_b_2, data = bact_df_t_2_norm, link = "logit", adaptive = TRUE, n_iter = 2000)
+```
+
+```{r}
+response_b_2.horse = horseshoe(response_b_2)
+```
+
+```{r}
+# save the plot
+pdf("bacterial_network_4.pdf")
+plot(response_b_2.horse)
+dev.off()
+```
+
+Fungal
+
+```{r}
+otus_f_1 = colnames(fung_df_t_1_norm)[1:6]
+otus_quoted_f_1 = paste0("`", otus_f_1, "`", collapse = " + ")
+formula_f_1 = as.formula(paste(otus_quoted_f_1, " ~ Samples"))
+```
+
+```{r}
+response_f_1 = CARlasso(formula_f_1, data = fung_df_t_1_norm, link = "logit", adaptive = TRUE, n_iter = 2000)
+```
+
+```{r}
+response_f_1.horse = horseshoe(response_f_1)
+```
+
+```{r}
+# save the plot
+pdf("fungal_network_6.pdf")
+plot(response_f_1.horse)
+dev.off()
+```
+
+```{r}
+otus_f_2 = colnames(fung_df_t_2_norm)[1:4]
+otus_quoted_f_2 = paste0("`", otus_f_2, "`", collapse = " + ")
+formula_f_2 = as.formula(paste(otus_quoted_f_2, " ~ Samples"))
+```
+
+```{r}
+response_f_2 = CARlasso(formula_f_2, data = fung_df_t_2_norm, link = "logit", adaptive = TRUE, n_iter = 2000)
+```
+
+```{r}
+response_f_2.horse = horseshoe(response_f_2)
+```
+
+```{r}
+# save the plot
+pdf("fungal_network_4.pdf")
+plot(response_f_2.horse)
+dev.off()
+```
