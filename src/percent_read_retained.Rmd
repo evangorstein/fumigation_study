@@ -1,0 +1,115 @@
+---
+title: "Percent Read Retained"
+author: "Tianyi Xu"
+date: "2025-01-28"
+output: html_document
+---
+
+```{r}
+#installation in case you need some package
+#install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+#devtools::install_github("schochastics/networkdata")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+```
+
+
+Read in the data
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+```{r}
+# Aggregate based on families. Choose to look at family OTU.
+fam.df = bac_abundance %>% 
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
+fam.mat = t(fam.mat)
+
+```
+
+```{r}
+# Calculate the percent read retained
+percent_read_retained = sum(rowSums(fam.mat)) / sum(rowSums(fam.df[,-1]))
+```
+
+```{r}
+# calculate percent of otu after family level
+otu_count = ncol(fam.mat)
+percent_otu_retained = otu_count / nrow(bac_abundance)
+```
+
+Save data as csv
+
+```{r}
+write.csv(percent_read_retained, here("percent_read_retained.csv"))
+write.csv(percent_otu_retained, here("percent_otu_retained.csv"))
+```
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+fung_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
+```
+
+Data Preprocessing
+    
+```{r}
+# Aggregate based on families. Choose to look at family OTU.
+genus.df = fung_abundance %>% 
+  mutate(Genus = as.character(Genus), Species = as.character(Species)) %>%
+  mutate(Genus = ifelse(Genus == "Unknown_Genus", Species, Genus)) %>%
+  mutate(Genus = replace_na(Genus, "Unknown")) %>% #Missing values included in Unknown_Family level
+  group_by(Genus) %>%
+  summarise(across(starts_with("Samp"), sum)) 
+
+genus = genus.df$Genus
+genus.mat = as.matrix(genus.df[,-1])
+rownames(genus.mat) = genus
+genus.mat = genus.mat[rownames(genus.mat)!="Unknown",]
+genus.mat = t(genus.mat)
+```
+
+```{r}
+# Calculate the percent read retained
+percent_read_retained = sum(rowSums(genus.mat)) / sum(rowSums(genus.df[,-1]))
+```
+
+```{r}
+# calculate percent of otu after family level
+otu_count = ncol(genus.mat)
+percent_otu_retained = otu_count / nrow(fung_abundance)
+```
+
+```{r}
+write.csv(percent_read_retained, here("percent_read_retained_fungi.csv"))
+write.csv(percent_otu_retained, here("percent_otu_retained_fungi.csv"))
+```
+
+
+
+
+
+
+
+
+
