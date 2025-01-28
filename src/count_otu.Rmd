@@ -1,0 +1,59 @@
+---
+title: "Count OTU"
+author: "Tianyi Xu"
+date: "2025-01-28"
+output: html_document
+---
+
+```{r}
+#installation in case you need some package
+#install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+#devtools::install_github("schochastics/networkdata")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+#Loads taxa and seqtab.nochim matrices
+load(here("data", "16S", "Fumigation_methyl_16s.rdata"))
+```
+
+# calculate the number of OTU identified
+```{r}
+# calculate the number of OTU
+otu_count = ncol(seqtab.nochim)
+```
+
+# Save data as csv
+```{r}
+write.csv(otu_count, here("otu_count.csv"))
+```
+
+# For fungi
+```{r}
+# Loads taxa and seqtab.nochim matrices
+load(here("data", "ITS", "Fumigation_methyl_ITS.rdata"))
+```
+
+# calculate the number of OTU identified
+```{r}
+# calculate the number of OTU
+otu_count = ncol(seqtab.nochim)
+```
+
+# Save data as csv
+```{r}
+write.csv(otu_count, here("otu_count_ITS.csv"))
+```
+
+
