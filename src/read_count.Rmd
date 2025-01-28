@@ -1,0 +1,78 @@
+---
+title: "Fumigation Information"
+author: "Tianyi Xu"
+date: "2025-01-28"
+output: html_document
+---
+
+```{r}
+#installation in case you need some package
+#install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+#devtools::install_github("schochastics/networkdata")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+```
+
+First, calculate the average read per sample.
+```{r}
+#Loads taxa and seqtab.nochim matrices
+load(here("data", "16S", "Fumigation_methyl_16s.rdata"))
+```
+
+```{r}
+#Calculate the average read per sample
+total_reads_per_sample = rowSums(seqtab.nochim)
+average_reads_per_sample = mean(total_reads_per_sample)
+```
+
+```{r}
+#Calculate the average read per sample
+mean_per_sample = rowMeans(seqtab.nochim)
+```
+
+Save data as csv
+
+```{r}
+write.csv(mean_per_sample, here("mean_per_sample.csv"))
+write.csv(average_reads_per_sample, here("average_reads_per_sample.csv"))
+```
+
+Now, for fungi
+
+```{r}
+#Loads taxa and seqtab.nochim matrices
+load(here("data", "ITS", "Fumigation_methyl_ITS.rdata"))
+```
+
+```{r}
+#Calculate the average read per sample
+total_reads_per_sample = rowSums(seqtab.nochim)
+average_reads_per_sample = mean(total_reads_per_sample)
+```
+
+```{r}
+#Calculate the average read per sample
+mean_per_sample = rowMeans(seqtab.nochim)
+```
+
+Save data as csv
+
+```{r}
+write.csv(mean_per_sample, here("mean_per_sample_ITS.csv"))
+write.csv(average_reads_per_sample, here("average_reads_per_sample_ITS.csv"))
+```
+
+
+
+
+
