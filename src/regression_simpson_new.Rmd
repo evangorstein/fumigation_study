@@ -341,13 +341,15 @@ samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
 Data cleaning
 ```{r}
 genus.df = fung_abundance %>% 
-  mutate(Genus = fct_na_value_to_level(Genus, "Unknown")) %>%
+  mutate(Genus = as.character(Genus), Species = as.character(Species)) %>%
+  mutate(Genus = ifelse(Genus == "Unknown_Genus", Species, Genus)) %>%
+  mutate(Genus = replace_na(Genus, "Unknown")) %>% #Missing values included in Unknown level
   group_by(Genus) %>%
   summarise(across(starts_with("Samp"), sum)) 
 
-genuses = genus.df$Genus
+genus = genus.df$Genus
 genus.mat = as.matrix(genus.df[,-1])
-rownames(genus.mat) = genuses
+rownames(genus.mat) = genus
 genus.mat = genus.mat[rownames(genus.mat)!="Unknown",]
 genus.mat = t(genus.mat)
 
