@@ -187,7 +187,14 @@ print(p_fumigation_b)
 
 ```{r}
 # save the plot
-ggsave("simpson_fumigation_bacteria.pdf", p_fumigation_b)
+ggsave("plot_high_quality/simpson_fumigation_bacteria.pdf", 
+       p_fumigation_b,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 ## Linear Model for Treatment
@@ -276,7 +283,14 @@ print(p_treatment_b)
 
 ```{r}
 # save the plot
-ggsave("simpson_treatment_bacteria.pdf", p_treatment_b)
+ggsave("plot_high_quality/simpson_treatment_bacteria.pdf", 
+       p_treatment_b,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 Linear Model for treatment and alpha diversity (inv_simpson)
@@ -471,7 +485,14 @@ print(p_fumigation_f)
 
 ```{r}
 # save the plot
-ggsave("simpson_fumigation_fungi.pdf", p_fumigation_f)
+ggsave("plot_high_quality/simpson_fumigation_fungi.pdf", 
+       p_fumigation_f,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 ```{r}
@@ -581,7 +602,14 @@ print(p_treatment_f)
 
 ```{r}
 # save the plot
-ggsave("simpson_treatment_fungi.pdf", p_treatment_f)
+ggsave("plot_high_quality/simpson_treatment_fungi.pdf", 
+       p_treatment_f,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
   ```
 
 ```{r}
