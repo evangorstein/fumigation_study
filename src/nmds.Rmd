@@ -94,8 +94,17 @@ samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
   #geom_text_repel(aes(label = samp_number)) +
   ggtitle(glue("NMDS with stress {round(nmds_asv$stress, 2)}"))
 
-ggsave(here("plots", "bacteria_nmds.pdf"), samples_plot)
 samples_plot 
+```
+
+```{r}
+ggsave("plot_high_quality/bacteria_nmds.pdf", samples_plot,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 ## Fungus 
