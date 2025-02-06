@@ -166,7 +166,14 @@ print(p_fumigation_b)
 
 ```{r}
 # save plot as pdf
-ggsave("shannon_fumigation_bacteria.pdf", p_fumigation_b)
+ggsave("plot_high_quality/shannon_fumigation_bacteria.pdf", 
+       p_fumigation_b,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 
@@ -273,7 +280,14 @@ print(p_treatment_b)
 
 ```{r}
 # save plot as pdf
-ggsave("shannon_treatment_bacteria.pdf", p_treatment_b)
+ggsave("plot_high_quality/shannon_treatment_bacteria.pdf", 
+       p_treatment_b,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 Linear Model for treatment and alpha diversity (shannon)
@@ -460,7 +474,14 @@ print(p_fumigation_f)
 
 ```{r}
 # save plot as pdf
-ggsave("shannon_fumigation_fungi.pdf", p_fumigation_f)
+ggsave("plot_high_quality/shannon_fumigation_fungi.pdf", 
+       p_fumigation_f,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 
@@ -563,7 +584,14 @@ print(p_treatment_f)
 
 ```{r}
 # save plot as pdf
-ggsave("shannon_treatment_fungi.pdf", p_treatment_f)
+ggsave("plot_high_quality/shannon_treatment_fungi.pdf", 
+       p_treatment_f,
+       width = 14,
+       height = 10,
+       dpi = 600,
+       device = cairo_pdf,
+       bg = "white",
+       limitsize = FALSE)
 ```
 
 # boxplot for alpha diversity by treatment
