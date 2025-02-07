@@ -186,14 +186,16 @@ create_heatmap = function(df, annotation = NULL,
                           ylabel = NULL, 
                           title = NULL, 
                           clustercol = TRUE,
-                          fontsize_row = 3){
+                          fontsize_row = 3,
+                          annotation_names_col = TRUE){
   setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
   heatmap = pheatmap(df, annotation_col = annotation, 
                      show_colnames = colname, 
                      show_rownames = rowname, 
                      main = title, angle_col = 0, 
                      cluster_cols = clustercol, 
-                     fontsize_row = fontsize_row)
+                     fontsize_row = fontsize_row,
+                     annotation_names_col = annotation_names_col)
   setHook("grid.newpage", NULL, "replace")
   grid.text(xlabel, y=-0.07, gp=gpar(fontsize=16))
   grid.text(ylabel, x=-0.07, rot=90, gp=gpar(fontsize=16))
@@ -414,7 +416,7 @@ par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
 # Create high DPI PDF for first plot
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap1_avg_highdpi.pdf"), 
     width = 12, 
-    height = 10,
+    height = 15,
     family = "ArialMT",
     fallback_resolution = 1200,  # Set DPI to 1200
     onefile = TRUE)
@@ -423,14 +425,16 @@ plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
                       rowname = TRUE, 
                       ylabel = "All 43 bacterial phyla",
-                      title = '')
+                      title = '',
+                      fontsize_row = 8,
+                      annotation_names_col = FALSE)
 plt2
 dev.off()
 
 # Second plot with high DPI
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap2_avg_highdpi.pdf"),
     width = 12, 
-    height = 10,
+    height = 15,
     family = "ArialMT",
     fallback_resolution = 1200,
     onefile = TRUE)
@@ -439,14 +443,16 @@ plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
                            ylabel = "26 most abundant bacterial phyla",
-                           title = '')
+                           title = '',
+                           fontsize_row = 11,
+                           annotation_names_col = FALSE)
 plt2.filt
 dev.off()
 
 # Third plot with high DPI
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap3_avg_highdpi.pdf"),
     width = 12, 
-    height = 10,
+    height = 15,
     family = "ArialMT",
     fallback_resolution = 1200,
     onefile = TRUE)
@@ -455,7 +461,9 @@ plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
                             ylabel = "14 most abundant bacterial phyla",
-                            title = '')
+                            title = '',
+                            fontsize_row = 14,
+                            annotation_names_col = FALSE)
 plt2.harsh
 dev.off()
 
@@ -836,30 +844,55 @@ row.names(heatmapdata.fam.lr.harsh) = all_otus.fam.lr.harsh
 Plotting the heatmap.
 
 ```{r}
-png(here("plot_1029", "bacteria_heatmap1_avg_fam_no_rowname.png"), width = 2000, height = 1500, res = 300)
-plt2 = create_heatmap(heatmapdata.fam.lr,
+# First set global graphics parameters for high DPI
+options(repr.plot.res = 1200)    # Set global resolution to 1200 DPI
+par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
+
+# First plot
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap1_avg_fam_no_rowname_highdpi.pdf"), 
+    width = 20, 
+    height = 15,
+    family = "ArialMT",
+    fallback_resolution = 1200,
+    onefile = TRUE)
+
+plt1 = create_heatmap(heatmapdata.fam.lr,
                       annotation = annotation_df,
                       #rowname = TRUE, 
                       ylabel = "All 295 bacterial families",
-                      title = ''
-)
+                      title = '',
+                      fontsize_row = 3)
 dev.off()
 
-png(here("plot_1029", "bacteria_heatmap2_avg_fam_no_rowname.png"), width = 2000, height = 1500, res = 300)
+# Second plot
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap2_avg_fam_no_rowname_highdpi.pdf"),
+    width = 12, 
+    height = 10,
+    family = "ArialMT",
+    fallback_resolution = 1200,
+    onefile = TRUE)
+
 plt2.filt = create_heatmap(heatmapdata.fam.lr.filt,
                            annotation = annotation_df,
-                           #rowname = TRUE,
+                           rowname = TRUE,
                            ylabel = "152 most abundant bacterial families",
-                           title = ''
-)
+                           title = '',
+                           fontsize_row = 3)
 dev.off()
 
-png(here("plot_1029", "bacteria_heatmap3_avg_fam_no_rowname.png"), width = 2000, height = 1500, res = 300)
+# Third plot
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap3_avg_fam_no_rowname_highdpi.pdf"),
+    width = 12, 
+    height = 10,
+    family = "ArialMT",
+    fallback_resolution = 1200,
+    onefile = TRUE)
+
 plt2.harsh = create_heatmap(heatmapdata.fam.lr.harsh,
                             annotation = annotation_df,
-                            #rowname = TRUE,
+                            rowname = TRUE,
                             ylabel = "73 most abundant bacterial families",
-                            title = ''
-)
+                            title = '',
+                            fontsize_row = 4)
 dev.off()
 ```
