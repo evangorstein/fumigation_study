@@ -48,7 +48,7 @@ sort(rowSums(phylum.mat), dec = T) %>% head(10)
 
 ```{r}
 # save the most abundant phylum to a file
-write.table(sort(rowSums(phylum.mat), dec = T), file = here("data", "clean", "most_abundant_phylum_bacteria.txt"))
+# write.table(sort(rowSums(phylum.mat), dec = T), file = here("data", "clean", "most_abundant_phylum_bacteria.txt"))
 ```
 
 Total number of OTUs in the data
@@ -79,8 +79,8 @@ phylum.filt.harsh = phylum.mat[phylum_mask_harsh,]
 
 ```{r}
 # save 2 filtered phylum only to a file
-write.table(rowSums(phylum.filt), file = here("data", "clean", "most_abundant_phylum_bacteria_filt.txt"))
-write.table(rowSums(phylum.filt.harsh), file = here("data", "clean", "most_abundant_phylum_bacteria_filt_harsh.txt"))
+# write.table(rowSums(phylum.filt), file = here("data", "clean", "most_abundant_phylum_bacteria_filt.txt"))
+# write.table(rowSums(phylum.filt.harsh), file = here("data", "clean", "most_abundant_phylum_bacteria_filt_harsh.txt"))
 ```
 
 If we wanted to filter `fam.filt` to only include samples in which at least 50 of the remaining 153 families show up (removing a single sample), we'd run the following coder
@@ -185,14 +185,15 @@ create_heatmap = function(df, annotation = NULL,
                           xlabel = NULL, 
                           ylabel = NULL, 
                           title = NULL, 
-                          clustercol = TRUE){
+                          clustercol = TRUE,
+                          fontsize_row = 3){
   setHook("grid.newpage", function() pushViewport(viewport(x=1,y=1,width=0.9, height=0.9, name="vp", just=c("right","top"))), action="prepend")
   heatmap = pheatmap(df, annotation_col = annotation, 
                      show_colnames = colname, 
                      show_rownames = rowname, 
                      main = title, angle_col = 0, 
                      cluster_cols = clustercol, 
-                     fontsize_row = 3)
+                     fontsize_row = fontsize_row)
   setHook("grid.newpage", NULL, "replace")
   grid.text(xlabel, y=-0.07, gp=gpar(fontsize=16))
   grid.text(ylabel, x=-0.07, rot=90, gp=gpar(fontsize=16))
@@ -365,73 +366,128 @@ annotation_df = annotation_df %>%
 Now we save the heatmap data to csv file with a new column for OTU's average count in each fumigation status.
 
 ```{r}
-# no filter
-#heatmapdata.phylum.lr = as.data.frame(heatmapdata.phylum.lr)
-heatmapdata.phylum.lr$never_average = rowMeans(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr$recent_average = rowMeans(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr$past_average = rowMeans(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-heatmapdata.phylum.lr$never_total = rowSums(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr$recent_total = rowSums(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr$past_total = rowSums(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-row.names(heatmapdata.phylum.lr) = all_otus.phylum.lr
+# # no filter
+# #heatmapdata.phylum.lr = as.data.frame(heatmapdata.phylum.lr)
+# heatmapdata.phylum.lr$never_average = rowMeans(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr$recent_average = rowMeans(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr$past_average = rowMeans(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# heatmapdata.phylum.lr$never_total = rowSums(heatmapdata.phylum.lr[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr$recent_total = rowSums(heatmapdata.phylum.lr[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr$past_total = rowSums(heatmapdata.phylum.lr[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# row.names(heatmapdata.phylum.lr) = all_otus.phylum.lr
 
-write.csv(heatmapdata.phylum.lr, here("data", "clean", "bact_phylum_heatmapdata.csv"), row.names = TRUE)
+# write.csv(heatmapdata.phylum.lr, here("data", "clean", "bact_phylum_heatmapdata.csv"), row.names = TRUE)
 
-# filter 1
-#heatmapdata.phylum.lr.filt = as.data.frame(heatmapdata.phylum.lr.filt)
-heatmapdata.phylum.lr.filt$never_average = rowMeans(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr.filt$recent_average = rowMeans(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr.filt$past_average = rowMeans(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-heatmapdata.phylum.lr.filt$never_total = rowSums(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr.filt$recent_total = rowSums(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr.filt$past_total = rowSums(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-row.names(heatmapdata.phylum.lr.filt) = all_otus.phylum.lr.filt
+# # filter 1
+# #heatmapdata.phylum.lr.filt = as.data.frame(heatmapdata.phylum.lr.filt)
+# heatmapdata.phylum.lr.filt$never_average = rowMeans(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr.filt$recent_average = rowMeans(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr.filt$past_average = rowMeans(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# heatmapdata.phylum.lr.filt$never_total = rowSums(heatmapdata.phylum.lr.filt[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr.filt$recent_total = rowSums(heatmapdata.phylum.lr.filt[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr.filt$past_total = rowSums(heatmapdata.phylum.lr.filt[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# row.names(heatmapdata.phylum.lr.filt) = all_otus.phylum.lr.filt
 
-write.csv(heatmapdata.phylum.lr.filt, here("data", "clean", "bact_phylum_heatmapdata_filt.csv"), row.names = TRUE)
+# write.csv(heatmapdata.phylum.lr.filt, here("data", "clean", "bact_phylum_heatmapdata_filt.csv"), row.names = TRUE)
 
-# filter 2
-#heatmapdata.phylum.lr.harsh = as.data.frame(heatmapdata.phylum.lr.harsh)
-heatmapdata.phylum.lr.harsh$never_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr.harsh$recent_average = rowMeans(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr.harsh$past_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-heatmapdata.phylum.lr.harsh$never_total = rowSums(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
-heatmapdata.phylum.lr.harsh$recent_total = rowSums(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
-heatmapdata.phylum.lr.harsh$past_total = rowSums(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
-row.names(heatmapdata.phylum.lr.harsh) = all_otus.phylum.lr.harsh
+# # filter 2
+# #heatmapdata.phylum.lr.harsh = as.data.frame(heatmapdata.phylum.lr.harsh)
+# heatmapdata.phylum.lr.harsh$never_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr.harsh$recent_average = rowMeans(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr.harsh$past_average = rowMeans(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# heatmapdata.phylum.lr.harsh$never_total = rowSums(heatmapdata.phylum.lr.harsh[, c("never_Day_0", "never_Day_10", "never_Day_255", "never_Day_282", "never_Day_43", "never_Day_71")])
+# heatmapdata.phylum.lr.harsh$recent_total = rowSums(heatmapdata.phylum.lr.harsh[, "recent_Day_10", drop=FALSE])
+# heatmapdata.phylum.lr.harsh$past_total = rowSums(heatmapdata.phylum.lr.harsh[, c("past_Day_255", "past_Day_282", "past_Day_43", "past_Day_71")])
+# row.names(heatmapdata.phylum.lr.harsh) = all_otus.phylum.lr.harsh
 
-write.csv(heatmapdata.phylum.lr.harsh, here("data", "clean", "bact_phylum_heatmapdata_filt_harsh.csv"), row.names = TRUE)
+# write.csv(heatmapdata.phylum.lr.harsh, here("data", "clean", "bact_phylum_heatmapdata_filt_harsh.csv"), row.names = TRUE)
 
 ```
 
 Plotting the heatmap.
 
 ```{r}
-png(here("plots_revised", "bacteria_heatmap1_avg.png"), width = 2000, height = 1500, res = 300)
+# First set global graphics parameters for high DPI
+options(repr.plot.res = 1200)    # Set global resolution to 1200 DPI
+par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
+
+# Create high DPI PDF for first plot
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap1_avg_highdpi.pdf"), 
+    width = 12, 
+    height = 10,
+    family = "ArialMT",
+    fallback_resolution = 1200,  # Set DPI to 1200
+    onefile = TRUE)
+
 plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
                       rowname = TRUE, 
                       ylabel = "All 43 bacterial phyla",
-                      title = ''
-)
+                      title = '')
+plt2
 dev.off()
 
-png(here("plots_revised", "bacteria_heatmap2_avg.png"), width = 2000, height = 1500, res = 300)
+# Second plot with high DPI
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap2_avg_highdpi.pdf"),
+    width = 12, 
+    height = 10,
+    family = "ArialMT",
+    fallback_resolution = 1200,
+    onefile = TRUE)
+
 plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
                            ylabel = "26 most abundant bacterial phyla",
-                           title = ''
-)
+                           title = '')
+plt2.filt
 dev.off()
 
-png(here("plots_revised", "bacteria_heatmap3_avg.png"), width = 2000, height = 1500, res = 300)
+# Third plot with high DPI
+cairo_pdf(here("plot_high_quality", "bacteria_heatmap3_avg_highdpi.pdf"),
+    width = 12, 
+    height = 10,
+    family = "ArialMT",
+    fallback_resolution = 1200,
+    onefile = TRUE)
+
 plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
                             ylabel = "14 most abundant bacterial phyla",
-                            title = ''
-)
+                            title = '')
+plt2.harsh
 dev.off()
+
+```
+
+```{r}
+# png(here("plots_revised", "bacteria_heatmap1_avg.png"), width = 2000, height = 1500, res = 300)
+# plt2 = create_heatmap(heatmapdata.phylum.lr,
+#                       annotation = annotation_df,
+#                       rowname = TRUE, 
+#                       ylabel = "All 43 bacterial phyla",
+#                       title = ''
+# )
+# dev.off()
+
+# png(here("plots_revised", "bacteria_heatmap2_avg.png"), width = 2000, height = 1500, res = 300)
+# plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
+#                            annotation = annotation_df,
+#                            rowname = TRUE,
+#                            ylabel = "26 most abundant bacterial phyla",
+#                            title = ''
+# )
+# dev.off()
+
+# png(here("plots_revised", "bacteria_heatmap3_avg.png"), width = 2000, height = 1500, res = 300)
+# plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
+#                             annotation = annotation_df,
+#                             rowname = TRUE,
+#                             ylabel = "14 most abundant bacterial phyla",
+#                             title = ''
+# )
+# dev.off()
 ```
 
 Now, we see if normalize after we aggreagate to 3 groups make any differences.
