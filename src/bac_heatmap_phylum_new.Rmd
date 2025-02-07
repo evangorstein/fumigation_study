@@ -850,8 +850,8 @@ par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
 
 # First plot
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap1_avg_fam_no_rowname_highdpi.pdf"), 
-    width = 15, 
-    height = 20,
+    width = 13, 
+    height = 23,
     family = "ArialMT",
     fallback_resolution = 1200,
     onefile = TRUE)
@@ -867,8 +867,8 @@ dev.off()
 
 # Second plot
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap2_avg_fam_no_rowname_highdpi.pdf"),
-    width = 15, 
-    height = 20,
+    width = 13, 
+    height = 23,
     family = "ArialMT",
     fallback_resolution = 1200,
     onefile = TRUE)
@@ -878,14 +878,14 @@ plt2.filt = create_heatmap(heatmapdata.fam.lr.filt,
                            rowname = TRUE,
                            ylabel = "152 most abundant bacterial families",
                            title = '',
-                           fontsize_row = 3,
+                           fontsize_row = 6,
                            annotation_names_col = FALSE)
 dev.off()
 
 # Third plot
 cairo_pdf(here("plot_high_quality", "bacteria_heatmap3_avg_fam_no_rowname_highdpi.pdf"),
-    width = 15, 
-    height = 20,
+    width = 13, 
+    height = 23,
     family = "ArialMT",
     fallback_resolution = 1200,
     onefile = TRUE)
@@ -895,7 +895,7 @@ plt2.harsh = create_heatmap(heatmapdata.fam.lr.harsh,
                             rowname = TRUE,
                             ylabel = "73 most abundant bacterial families",
                             title = '',
-                            fontsize_row = 4,
+                            fontsize_row = 7,
                             annotation_names_col = FALSE)
 dev.off()
 ```
