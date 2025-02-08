@@ -422,7 +422,9 @@ plt1 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = annotation_df,
                       rowname = TRUE, 
                       ylabel = "All 12 fungal phyla",
-                      title = ''
+                      title = '',
+                      fontsize_row = 12,
+                      annotation_names_col = FALSE
 )
 dev.off()
 
@@ -437,7 +439,9 @@ plt2.filt = create_heatmap(heatmapdata.phylum.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
                            ylabel = "10 most abundant fungal phyla",
-                           title = ''
+                           title = '',
+                           fontsize_row = 15,
+                           annotation_names_col = FALSE
 )
 dev.off()
 
@@ -452,7 +456,9 @@ plt2.harsh = create_heatmap(heatmapdata.phylum.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
                             ylabel = "4 most abundant fungal phyla",
-                            title = ''
+                            title = '',
+                            fontsize_row = 17,
+                            annotation_names_col = FALSE
 )
 dev.off()
 ```
@@ -669,9 +675,11 @@ cairo_pdf(here("plot_high_quality", "fung_heatmap1_avg_genus_highdpi.pdf"),
 
 plt1 = create_heatmap(heatmapdata.genus.lr,
                       annotation = annotation_df,
-                      rowname = TRUE, 
+                      #rowname = TRUE, 
                       ylabel = "All 408 fungal genuses",
-                      title = ''
+                      title = '',
+                      fontsize_row = 6,
+                      annotation_names_col = FALSE
 )
 dev.off()
 
@@ -686,7 +694,9 @@ plt2.filt = create_heatmap(heatmapdata.genus.lr.filt,
                            annotation = annotation_df,
                            rowname = TRUE,
                            ylabel = "68 most abundant fungal genuses",
-                           title = ''
+                           title = '',
+                           fontsize_row = 6,
+                           annotation_names_col = FALSE
 )
 dev.off()
 
@@ -701,7 +711,9 @@ plt2.harsh = create_heatmap(heatmapdata.genus.lr.harsh,
                             annotation = annotation_df,
                             rowname = TRUE,
                             ylabel = "22 most abundant fungal genuses",
-                            title = ''
+                            title = '',
+                            fontsize_row = 9,
+                            annotation_names_col = FALSE
 )
 dev.off()
 ```
