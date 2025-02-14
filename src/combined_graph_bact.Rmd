@@ -239,7 +239,7 @@ plot_network = function(net, title, filter){
 plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
 plot.never.glasso
 
-ggsave("plot_graph/never_glasso.png", plot.never.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -253,7 +253,7 @@ subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
 subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
 subplot.never.glasso
 
-ggsave("plot_graph/never_glasso_largest_cluster.png", subplot.never.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_glasso_largest_cluster.pdf", subplot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -261,7 +261,7 @@ ggsave("plot_graph/never_glasso_largest_cluster.png", subplot.never.glasso, widt
 plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
 plot.recent.glasso
 
-ggsave("plot_graph/recent_glasso.png", plot.recent.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -274,7 +274,7 @@ subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glass
 subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
 subplot.recent.glasso
 
-ggsave("plot_graph/recent_glasso_largest_cluster.png", subplot.recent.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_glasso_largest_cluster.pdf", subplot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -282,7 +282,7 @@ ggsave("plot_graph/recent_glasso_largest_cluster.png", subplot.recent.glasso, wi
 plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
 plot.past.glasso
 
-ggsave("plot_graph/past_glasso.png", plot.past.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -295,7 +295,7 @@ subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
 subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
 subplot.past.glasso
 
-ggsave("plot_graph/past_glasso_largest_cluster.png", subplot.past.glasso, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_glasso_largest_cluster.pdf", subplot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -328,7 +328,7 @@ V(past.diss)[degree(past.diss) == 0]$clu <- "999"
 plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.never.diss
 
-ggsave("plot_graph/never_diss.png", plot.never.diss, width = 12, height = 10, dpi = 300)  
+ggsave("plot_high_quality/never_diss.pdf", plot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)  
 ```
 
 ```{r}
@@ -341,7 +341,7 @@ subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
 subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.never.diss
 
-ggsave("plot_graph/never_diss_largest_cluster.png", subplot.never.diss, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_diss_largest_cluster.pdf", subplot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -349,7 +349,7 @@ ggsave("plot_graph/never_diss_largest_cluster.png", subplot.never.diss, width = 
 plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.recent.diss
 
-ggsave("plot_graph/recent_diss.png", plot.recent.diss, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_diss.pdf", plot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -362,7 +362,7 @@ subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
 subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.recent.diss
 
-ggsave("plot_graph/recent_diss_largest_cluster.png", subplot.recent.diss, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_diss_largest_cluster.pdf", subplot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -370,7 +370,7 @@ ggsave("plot_graph/recent_diss_largest_cluster.png", subplot.recent.diss, width 
 plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
 plot.past.diss
 
-ggsave("plot_graph/past_diss.png", plot.past.diss, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_diss.pdf", plot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -383,7 +383,7 @@ subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
 subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
 subplot.past.diss
 
-ggsave("plot_graph/past_diss_largest_cluster.png", subplot.past.diss, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_diss_largest_cluster.pdf", subplot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Plot the network - correlation
@@ -415,7 +415,7 @@ V(past.corr)[degree(past.corr) == 0]$clu <- "999"
 plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
 plot.never.corr
 
-ggsave("plot_graph/never_corr.png", plot.never.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_corr.pdf", plot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -428,7 +428,7 @@ subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
 subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
 subplot.never.corr
 
-ggsave("plot_graph/never_corr_largest_cluster.png", subplot.never.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_corr_largest_cluster.pdf", subplot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -436,7 +436,7 @@ ggsave("plot_graph/never_corr_largest_cluster.png", subplot.never.corr, width = 
 plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
 plot.recent.corr
 
-ggsave("plot_graph/recent_corr.png", plot.recent.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_corr.pdf", plot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -449,7 +449,7 @@ subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
 subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
 subplot.recent.corr
 
-ggsave("plot_graph/recent_corr_largest_cluster.png", subplot.recent.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_corr_largest_cluster.pdf", subplot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -458,7 +458,7 @@ ggsave("plot_graph/recent_corr_largest_cluster.png", subplot.recent.corr, width 
 plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
 plot.past.corr
 
-ggsave("plot_graph/past_corr.png", plot.past.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_corr.pdf", plot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -471,7 +471,7 @@ subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
 subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
 subplot.past.corr
 
-ggsave("plot_graph/past_corr_largest_cluster.png", subplot.past.corr, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_corr_largest_cluster.pdf", subplot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Combined Graph
@@ -546,7 +546,7 @@ never_combined_plot =ggraph(combined_graph.never, layout = "fr") +
   ggtitle("Combined Graph for Never Fumigated Samples")
 never_combined_plot
 
-ggsave("plot_graph/never_combined.png", never_combined_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_combined.pdf", never_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -564,7 +564,7 @@ never_subgraph_plot = ggraph(subgraph.never, layout = "fr") +
 
 never_subgraph_plot
 
-ggsave("plot_1029/never_subgraph.png", never_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/never_subgraph.pdf", never_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Combined Graph for Recent Network
@@ -639,7 +639,7 @@ recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
 
 recent_combined_plot
 
-ggsave("plot_graph/recent_combined.png", recent_combined_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_combined.pdf", recent_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -657,7 +657,7 @@ recent_subgraph_plot = ggraph(subgraph.recent, layout = "fr") +
 
 recent_subgraph_plot
 
-ggsave("plot_1029/recent_subgraph.png", recent_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/recent_subgraph.pdf", recent_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Combined Graph for Past Network
@@ -732,7 +732,7 @@ past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
 
 past_combined_plot
 
-ggsave("plot_graph/past_combined.png", past_combined_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_combined.pdf", past_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -750,7 +750,7 @@ past_subgraph_plot = ggraph(subgraph.past, layout = "fr") +
 
 past_subgraph_plot
 
-ggsave("plot_1029/past_subgraph.png", past_subgraph_plot, width = 12, height = 10, dpi = 300)
+ggsave("plot_high_quality/past_subgraph.pdf", past_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -854,7 +854,7 @@ dg_combined_bp = ggplot(overall_df, aes(x = fumigation_status, y = degree)) +
 
 dg_combined_bp
 
-ggsave("plot_graph/dg_combined_bp.pdf", dg_combined_bp)
+ggsave("plot_high_quality/dg_combined_bp.pdf", dg_combined_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -877,7 +877,7 @@ bt_combined_bp = ggplot(overall_betweenness_df, aes(x = fumigation_status, y = b
 
 bt_combined_bp
 
-ggsave("plot_graph/bt_combined_bp.pdf", bt_combined_bp)
+ggsave("plot_high_quality/bt_combined_bp.pdf", bt_combined_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Glasso
@@ -901,7 +901,7 @@ dg_glasso_bp = ggplot(glasso_degree_df, aes(x = fumigation_status, y = degree)) 
 
 dg_glasso_bp
 
-ggsave("plot_graph/dg_glasso_bp.pdf", dg_glasso_bp)
+ggsave("plot_high_quality/dg_glasso_bp.pdf", dg_glasso_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -925,7 +925,7 @@ bt_glasso_bp = ggplot(glasso_betweenness_df, aes(x = fumigation_status, y = betw
 
 bt_glasso_bp
 
-ggsave("plot_graph/bt_glasso_bp.pdf", bt_glasso_bp)
+ggsave("plot_high_quality/bt_glasso_bp.pdf", bt_glasso_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Dissimilarity
@@ -949,7 +949,7 @@ dg_diss_bp = ggplot(diss_degree_df, aes(x = fumigation_status, y = degree)) +
 
 dg_diss_bp
 
-ggsave("plot_graph/dg_diss_bp.pdf", dg_diss_bp)
+ggsave("plot_high_quality/dg_diss_bp.pdf", dg_diss_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -972,7 +972,7 @@ bt_diss_bp = ggplot(diss_betweenness_df, aes(x = fumigation_status, y = betweenn
 
 bt_diss_bp
 
-ggsave("plot_graph/bt_diss_bp.pdf", bt_diss_bp)
+ggsave("plot_high_quality/bt_diss_bp.pdf", bt_diss_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 Correlation
@@ -996,7 +996,7 @@ dg_corr_bp = ggplot(corr_degree_df, aes(x = fumigation_status, y = degree)) +
 
 dg_corr_bp
 
-ggsave("plot_graph/dg_corr_bp.pdf", dg_corr_bp)
+ggsave("plot_high_quality/dg_corr_bp.pdf", dg_corr_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -1020,7 +1020,7 @@ bt_corr_bp = ggplot(corr_betweenness_df, aes(x = fumigation_status, y = betweenn
 
 bt_corr_bp
 
-ggsave("plot_graph/bt_corr_bp.pdf", bt_corr_bp)
+ggsave("plot_high_quality/bt_corr_bp.pdf", bt_corr_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 TODO: we can also compare GDV in future.
@@ -1099,7 +1099,9 @@ response.horse = horseshoe(response)
 
 ```{r}
 # save plot
-png("plot_graph/carlasso_plot_bact_both.png")
+options(repr.plot.res = 1200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+cairo_pdf("plot_high_quality/carlasso_plot_bact_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 plot(response.horse)
 dev.off()
 ```
@@ -1120,7 +1122,9 @@ response2.horse = horseshoe(response2)
 ```
 
 ```{r}
-png("plot_graph/carlasso_plot_bact_single.png")
+options(repr.plot.res = 1200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+cairo_pdf("plot_high_quality/carlasso_plot_bact_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 plot(response2.horse)
 dev.off()
 ```
@@ -1145,7 +1149,9 @@ response10.horse = horseshoe(response10)
 ```
 
 ```{r}
-png("plot_graph/carlasso_plot_bact_both_10.png")
+options(repr.plot.res = 1200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+cairo_pdf("plot_high_quality/carlasso_plot_bact_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 plot(response10.horse)
 dev.off()
 ```
@@ -1164,7 +1170,9 @@ response10_2.horse = horseshoe(response10_2)
 ```
 
 ```{r}
-png("plot_graph/carlasso_plot_bact_single_10.png")
+options(repr.plot.res = 1200)
+par(mar = c(5, 4, 4, 2) + 0.1)
+cairo_pdf("plot_high_quality/carlasso_plot_bact_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 plot(response10_2.horse)
 dev.off()
 ```
