@@ -534,14 +534,14 @@ sample_metadata_treat = sample_metadata %>%
 
 ```{r}
 # anova for fumigation status
-anova_result = aov(inv_simpson_fungi ~ fumigation, data = sample_metadata_treat)
-anova_result
+anova_result_treat = aov(inv_simpson_fungi ~ fumigation, data = sample_metadata_treat)
+anova_result_treat
 ```
 
 ```{r}
 #TukeyHSD for fumigation status
-tukey_result = TukeyHSD(sample_metadata_treat)
-tukey_result
+tukey_result_treat = TukeyHSD(anova_result_treat)
+tukey_result_treat
 ```
 
 Non-parametric test for treatment
@@ -680,25 +680,25 @@ waldtest(model_treat, model_treat_fum, vcov = vcovHC)
 
 ```{r}
 # Create a combined plot with ggarrange
-# Load the grid package
-library(grid)
+# # Load the grid package
+# library(grid)
 
-# Assuming your plots are stored in these variables
-# p_fumigation_b, p_treatment_b, p_fumigation_f, p_treatment_f
+# # Assuming your plots are stored in these variables
+# # p_fumigation_b, p_treatment_b, p_fumigation_f, p_treatment_f
 
-# Create a layout for a 2x2 grid
-pdf("plots_new/combined_plots_simpson.pdf", width = 14, height = 10)
-grid.newpage()
-pushViewport(viewport(layout = grid.layout(2, 2)))
+# # Create a layout for a 2x2 grid
+# pdf("plots_new/combined_plots_simpson.pdf", width = 14, height = 10)
+# grid.newpage()
+# pushViewport(viewport(layout = grid.layout(2, 2)))
 
-# Function to define the position of each plot
-vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+# # Function to define the position of each plot
+# vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
 
-# Print each plot in the specified position
-print(p_fumigation_b, vp = vplayout(1, 1))
-print(p_treatment_b, vp = vplayout(1, 2))
-print(p_fumigation_f, vp = vplayout(2, 1))
-print(p_treatment_f, vp = vplayout(2, 2))
+# # Print each plot in the specified position
+# print(p_fumigation_b, vp = vplayout(1, 1))
+# print(p_treatment_b, vp = vplayout(1, 2))
+# print(p_fumigation_f, vp = vplayout(2, 1))
+# print(p_treatment_f, vp = vplayout(2, 2))
 
-dev.off()
+# dev.off()
 ```
