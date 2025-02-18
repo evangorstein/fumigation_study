@@ -178,7 +178,11 @@ fung_samples_plot = ggplot(fung_sample_scores, aes(NMDS1, NMDS2)) +
   scale_color_manual(values = color_coding) +
   ggtitle("Samples") +
   theme_bw() +
-  theme(plot.title = element_text(hjust=0.5)) +
+  theme(plot.title = element_text(hjust=0.5, size = 20),
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 13),
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 15)) +
   #geom_text_repel(aes(label = samp_number)) +
   ggtitle(glue("NMDS with stress {round(fung_nmds_asv$stress, 2)}"))
 
