@@ -543,7 +543,13 @@ never_combined_plot =ggraph(combined_graph.never, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Never Fumigated Samples")
+  ggtitle("Combined Graph for Never Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 never_combined_plot
 
 ggsave("plot_high_quality/never_combined.pdf", never_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
@@ -635,7 +641,13 @@ recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Recent Fumigated Samples")
+  ggtitle("Combined Graph for Recent Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 recent_combined_plot
 
@@ -728,7 +740,13 @@ past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Past Fumigated Samples")
+  ggtitle("Combined Graph for Past Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 past_combined_plot
 
