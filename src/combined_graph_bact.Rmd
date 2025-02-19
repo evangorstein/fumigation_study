@@ -1117,11 +1117,19 @@ response.horse = horseshoe(response)
 
 ```{r}
 # save plot
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_bact_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response.horse)
-dev.off()
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_both_plot = plot(response.horse) + 
+  theme(
+
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_both.pdf", bact_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso for only single response
@@ -1140,13 +1148,20 @@ response2.horse = horseshoe(response2)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_bact_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response2.horse)
-dev.off()
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_single_plot = plot(response2.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response2.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_single.pdf", bact_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
-
 CARlasso on top 10 most different taxa.
 
 ```{r}
@@ -1167,11 +1182,19 @@ response10.horse = horseshoe(response10)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_bact_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response10.horse)
-dev.off()
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_both_10_plot = plot(response10.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response10.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_both_10.pdf", bact_both_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -1188,11 +1211,18 @@ response10_2.horse = horseshoe(response10_2)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_bact_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response10_2.horse)
-dev.off()
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_single_10_plot = plot(response10_2.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_single_10.pdf", bact_single_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ## Investigation
