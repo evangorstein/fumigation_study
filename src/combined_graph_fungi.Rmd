@@ -544,7 +544,13 @@ never_combined_plot = ggraph(combined_graph.never, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Never Fumigated Samples")
+  ggtitle("Combined Graph for Never Fumigated Samples") +
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 never_combined_plot
 
@@ -637,7 +643,13 @@ recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Recent Fumigated Samples")
+  ggtitle("Combined Graph for Recent Fumigated Samples") +
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 recent_combined_plot
 
@@ -731,7 +743,13 @@ past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
   scale_size(range = c(1, 6)) +
   theme_graph() +
-  ggtitle("Combined Graph for Past Fumigated Samples")
+  ggtitle("Combined Graph for Past Fumigated Samples") +
+  theme(
+    plot.title = element_text(size = 25), 
+    legend.title = element_text(size = 20),
+    legend.text = element_text(size = 18),
+    legend.key.size = unit(1.5, 'cm')
+  )
 
 past_combined_plot
 
@@ -1100,11 +1118,15 @@ response.horse = horseshoe(response)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_fungi_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response.horse)
-dev.off()
+fungi_both_plot = plot(response.horse) + 
+  theme(
+
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+
+ggsave("plot_high_quality/carlasso_plot_fungi_both.pdf", fungi_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso for only single response
@@ -1123,11 +1145,14 @@ response2.horse = horseshoe(response2)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_fungi_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response2.horse)
-dev.off()
+fungi_single_plot = plot(response2.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+
+ggsave("plot_high_quality/carlasso_plot_fungi_single.pdf", fungi_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso on top 10 most different taxa.
@@ -1150,11 +1175,14 @@ response10.horse = horseshoe(response10)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_fungi_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response10.horse)
-dev.off()
+fungi_both_10_plot = plot(response10.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+
+ggsave("plot_high_quality/carlasso_plot_fungi_both_10.pdf", fungi_both_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -1171,11 +1199,14 @@ response10_2.horse = horseshoe(response10_2)
 ```
 
 ```{r}
-options(repr.plot.res = 1200)
-par(mar = c(5, 4, 4, 2) + 0.1)
-cairo_pdf("plot_high_quality/carlasso_plot_fungi_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
-plot(response10_2.horse)
-dev.off()
+fungi_single_10_plot = plot(response10_2.horse) + 
+  theme(
+    legend.title = element_text(size = 13),    # Legend title size
+    legend.text = element_text(size = 13),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+
+ggsave("plot_high_quality/carlasso_plot_fungi_single_10.pdf", fungi_single_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
