@@ -1120,7 +1120,6 @@ response.horse = horseshoe(response)
 ```{r}
 fungi_both_plot = plot(response.horse) + 
   theme(
-
     legend.title = element_text(size = 13),    # Legend title size
     legend.text = element_text(size = 13),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
