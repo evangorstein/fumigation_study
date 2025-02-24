@@ -545,9 +545,9 @@ never_combined_plot =ggraph(combined_graph.never, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Never Fumigated Samples") + 
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 never_combined_plot
@@ -643,9 +643,9 @@ recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples") + 
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 
@@ -742,9 +742,9 @@ past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Past Fumigated Samples") + 
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 
@@ -1122,14 +1122,14 @@ response.horse = horseshoe(response)
 bact_both_plot = plot(response.horse) + 
   theme(
 
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 # cairo_pdf("plot_high_quality/carlasso_plot_bact_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 # plot(response.horse)
 # dev.off()
-ggsave("plot_high_quality/carlasso_plot_bact_both.pdf", bact_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_bact_both.pdf", bact_both_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso for only single response
@@ -1153,14 +1153,14 @@ response2.horse = horseshoe(response2)
 # par(mar = c(5, 4, 4, 2) + 0.1)
 bact_single_plot = plot(response2.horse) + 
   theme(
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.5, 'cm')          
   )
 # cairo_pdf("plot_high_quality/carlasso_plot_bact_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 # plot(response2.horse)
 # dev.off()
-ggsave("plot_high_quality/carlasso_plot_bact_single.pdf", bact_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_bact_single.pdf", bact_single_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 CARlasso on top 10 most different taxa.
 
@@ -1187,14 +1187,14 @@ response10.horse = horseshoe(response10)
 # par(mar = c(5, 4, 4, 2) + 0.1)
 bact_both_10_plot = plot(response10.horse) + 
   theme(
-    legend.title = element_text(size = 15),    # Legend title size
-    legend.text = element_text(size = 15),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 # cairo_pdf("plot_high_quality/carlasso_plot_bact_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 # plot(response10.horse)
 # dev.off()
-ggsave("plot_high_quality/carlasso_plot_bact_both_10.pdf", bact_both_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_bact_both_10.pdf", bact_both_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -1216,13 +1216,13 @@ response10_2.horse = horseshoe(response10_2)
 # par(mar = c(5, 4, 4, 2) + 0.1)
 bact_single_10_plot = plot(response10_2.horse) + 
   theme(
-    legend.title = element_text(size = 15),    # Legend title size
-    legend.text = element_text(size = 15),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 # cairo_pdf("plot_high_quality/carlasso_plot_bact_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
 # dev.off()
-ggsave("plot_high_quality/carlasso_plot_bact_single_10.pdf", bact_single_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_bact_single_10.pdf", bact_single_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ## Investigation

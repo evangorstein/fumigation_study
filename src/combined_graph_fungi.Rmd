@@ -546,9 +546,9 @@ never_combined_plot = ggraph(combined_graph.never, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Never Fumigated Samples") +
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 
@@ -645,9 +645,9 @@ recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Recent Fumigated Samples") +
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 
@@ -745,9 +745,9 @@ past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
   theme_graph() +
   ggtitle("Combined Graph for Past Fumigated Samples") +
   theme(
-    plot.title = element_text(size = 25), 
-    legend.title = element_text(size = 20),
-    legend.text = element_text(size = 18),
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
     legend.key.size = unit(1.5, 'cm')
   )
 
@@ -1120,12 +1120,12 @@ response.horse = horseshoe(response)
 ```{r}
 fungi_both_plot = plot(response.horse) + 
   theme(
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 
-ggsave("plot_high_quality/carlasso_plot_fungi_both.pdf", fungi_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_fungi_both.pdf", fungi_both_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso for only single response
@@ -1146,12 +1146,12 @@ response2.horse = horseshoe(response2)
 ```{r}
 fungi_single_plot = plot(response2.horse) + 
   theme(
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 
-ggsave("plot_high_quality/carlasso_plot_fungi_single.pdf", fungi_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_fungi_single.pdf", fungi_single_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 CARlasso on top 10 most different taxa.
@@ -1176,12 +1176,12 @@ response10.horse = horseshoe(response10)
 ```{r}
 fungi_both_10_plot = plot(response10.horse) + 
   theme(
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 
-ggsave("plot_high_quality/carlasso_plot_fungi_both_10.pdf", fungi_both_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_fungi_both_10.pdf", fungi_both_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
@@ -1200,12 +1200,12 @@ response10_2.horse = horseshoe(response10_2)
 ```{r}
 fungi_single_10_plot = plot(response10_2.horse) + 
   theme(
-    legend.title = element_text(size = 13),    # Legend title size
-    legend.text = element_text(size = 13),     # Legend text size
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
     legend.key.size = unit(1.7, 'cm')          
   )
 
-ggsave("plot_high_quality/carlasso_plot_fungi_single_10.pdf", fungi_single_10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_high_quality/carlasso_plot_fungi_single_10.pdf", fungi_single_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
