@@ -1,0 +1,1381 @@
+---
+title: "Network Analysis New Bacteria"
+author: "Tianyi Xu"
+date: "2025-03-07"
+output: html_document
+---
+
+```{r}
+#installation in case you need some package
+#install.packages(c("igraph", "graphlayouts", "ggraph","ggforce"))
+#devtools::install_github("schochastics/networkdata")
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(vegan)
+library(tidyverse)
+library(here)
+library(forcats)
+library(compositions)
+library(dplyr)
+library(stringr)
+library(glasso)
+library(igraph)
+library(qgraph)
+library(ggraph)
+library(networkdata)
+library(graphlayouts)
+library(ggforce)
+library(ggplot2)
+library(CARlasso)
+library(viridis)
+```
+
+Read in the data
+
+```{r}
+samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
+bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+```
+
+Data Preprocessing
+    
+```{r}
+# Aggregate based on families. Choose to look at family OTU.
+fam.df = bac_abundance %>% 
+  mutate(Family = as.character(Family), Genus = as.character(Genus)) %>%
+  mutate(Family = ifelse(Family == "Unknown_Family", Genus, Family)) %>%
+  mutate(Family = replace_na(Family, "Unknown")) %>% #Missing values included in Unknown_Family level
+  group_by(Family) %>%
+  summarise(across(starts_with("Samp"), sum))  
+
+fams = fam.df$Family
+fam.mat = as.matrix(fam.df[,-1])
+rownames(fam.mat) = fams
+fam.mat = fam.mat[rownames(fam.mat)!="Unknown",]
+fam.mat = t(fam.mat)
+
+```
+
+```{r}
+# add sample number to metadata for each samples.
+samp_metadata = samp_metadata %>%
+  mutate(fumigation = case_when(
+    Time == "Day_0" | Treatment == "Non-fumigated chipping grass"  ~ "never",
+    Time == "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "recent",
+    Time != "Day_0" & Time != "Day_10" & Treatment != "Non-fumigated chipping grass" ~ "past"
+  )) %>%
+  mutate(sample_name = case_when(
+    samp_number < 10 ~ paste0("Samp00", samp_number),
+    samp_number < 100 ~ paste0("Samp0", samp_number),
+    TRUE ~ paste0("Samp", samp_number)
+  ))
+
+```
+
+```{r}
+# pull out samples based on fumigation time
+never = samp_metadata %>% filter(fumigation == "never") %>% pull(sample_name)
+recent = samp_metadata %>% filter(fumigation == "recent") %>% pull(sample_name)
+past = samp_metadata %>% filter(fumigation == "past") %>% pull(sample_name)
+
+# create 3 different matrix for 3 fumigation time
+fam.mat.never = fam.mat[never,]
+fam.mat.recent = fam.mat[recent,]
+fam.mat.past = fam.mat[past,]
+```
+
+Function for data analysis
+
+```{r}
+# create a function to process matrix
+create_matrix = function(mat){
+    # clr transformation
+    mat = mat + 0.5
+    mat = clr(mat)
+
+    # correlation matrix
+    mat = cor(mat)
+    return(mat)
+}
+
+glasso_net = function(mat, rho){
+    net = glasso(mat, rho = rho)
+    p.net = net$wi
+    colnames(p.net) = colnames(mat)
+    rownames(p.net) = rownames(mat)
+
+    # check if matrix is symmetric
+    if (!isSymmetric(p.net)) {
+        p.net[lower.tri(p.net)] = t(p.net)[lower.tri(p.net)]
+    }
+
+    # calculate partical correlation matrix
+    parr.corr.net = matrix(nrow = nrow(p.net), ncol = ncol(p.net))
+
+    for(k in 1:nrow(parr.corr.net)) {
+        for(j in 1:ncol(parr.corr.net)) {
+        parr.corr.net[j, k] = -p.net[j,k]/sqrt(p.net[j,j]*p.net[k,k])
+        }
+    }
+
+    colnames(parr.corr.net) = colnames(p.net)
+    rownames(parr.corr.net) = rownames(p.net)
+    diag(parr.corr.net) = 0
+
+    net.glasso = graph.adjacency(parr.corr.net, mode = "undirected", weighted = TRUE, diag = FALSE)
+    return(net.glasso)
+}
+
+# function for dissimilarity matrix
+dis_net = function(mat, cutoff){
+    # TODO: considering normalizing the data?
+    # Normalize the data
+    mat = t(mat)
+    #print(library_size)
+    fam.ls = t( t(mat) / colSums(mat))
+    
+    normal_mat = t(fam.ls)
+    diss.mat = as.matrix(vegdist(t(normal_mat)), method = "bray")
+    diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
+    # change all NA to 1
+    diss.adj[is.na(diss.adj)] = 1
+    net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
+    return(net.diss)
+}
+
+# function for correlation matrix method
+corr_net = function(mat, cutoff){
+    mat = mat + 0.5
+    mat = clr(mat)
+    cor.mat = cor(mat, method = "pearson")
+    corr.adj = ifelse(abs(cor.mat) >= cutoff, 1, 0)
+    net.corr = graph.adjacency(corr.adj, mode = "undirected", diag = FALSE)
+    return(net.corr)
+}
+```
+
+Set scale_edge_color_discrete
+
+```{r}
+set.seed(3407)
+```
+
+Plot the network - Glasso
+
+```{r}
+# first get transformed matrix
+never.mat = create_matrix(fam.mat.never)
+recent.mat = create_matrix(fam.mat.recent)
+past.mat = create_matrix(fam.mat.past)
+
+never.glasso = glasso_net(never.mat, 0.75)
+recent.glasso = glasso_net(recent.mat, 0.75)
+past.glasso = glasso_net(past.mat, 0.75)
+
+# convert glasso weight to positive
+E(never.glasso)$weight = E(never.glasso)$weight - (min(E(never.glasso)$weight)) + 0.0001
+E(recent.glasso)$weight = E(recent.glasso)$weight - (min(E(recent.glasso)$weight)) + 0.0001
+E(past.glasso)$weight = E(past.glasso)$weight - (min(E(past.glasso)$weight)) + 0.0001
+
+# compute clustering
+V(never.glasso)$clu = as.character(membership(cluster_louvain(never.glasso)))
+V(recent.glasso)$clu = as.character(membership(cluster_louvain(recent.glasso)))
+V(past.glasso)$clu = as.character(membership(cluster_louvain(past.glasso)))
+
+# compute node size based on degree
+V(never.glasso)$size = degree(never.glasso)
+V(recent.glasso)$size = degree(recent.glasso)
+V(past.glasso)$size = degree(past.glasso)
+
+V(never.glasso)$clu[V(never.glasso)$degree == 0] = "999"
+V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
+V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
+```
+
+```{r}
+# Find nodes with a degree of 0 for each graph
+zero_degree_nodes_never = V(never.glasso)[degree(never.glasso) == 0]
+zero_degree_nodes_recent = V(recent.glasso)[degree(recent.glasso) == 0]
+zero_degree_nodes_past = V(past.glasso)[degree(past.glasso) == 0]
+
+# Assign these nodes to a new community cluster (cluster "999")
+V(never.glasso)[degree(never.glasso) == 0]$clu = "999"
+V(recent.glasso)[degree(recent.glasso) == 0]$clu = "999"
+V(past.glasso)[degree(past.glasso) == 0]$clu = "999"
+```
+
+Plot the network for Glasso method
+
+Here is the function to create a plot.
+
+```{r}
+# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
+plot_network = function(net, title, filter){
+    network = ggraph(net, layout = "fr") +
+    geom_edge_link0(color = "grey66") +
+    geom_node_point(aes(fill = clu, size = size), shape = 21) +
+    geom_node_text(aes(filter = size > filter, label = name, size = ifelse(degree(net) > 15, degree(net), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
+    scale_edge_width(range = c(0.2, 3)) +
+    scale_size(range = c(1, 6)) +
+    scale_fill_viridis(discrete = TRUE, option = "viridis") +
+    theme_void() +
+    theme(
+      legend.position = "right",
+      plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
+
+    )
+
+    return(network)
+}
+
+# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
+plot_circular_network = function(net, title, filter){
+    network = ggraph(net, layout = "circle") +
+    geom_edge_link0(color = "grey66") +
+    geom_node_point(aes(fill = clu, size = size), shape = 21) +
+    geom_node_text(aes(filter = size > filter, label = name, size = ifelse(degree(net) > 15, degree(net), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
+    scale_edge_width(range = c(0.2, 3)) +
+    scale_size(range = c(1, 6)) +
+    scale_fill_viridis(discrete = TRUE, option = "viridis") +
+    theme_void() +
+    theme(
+      legend.position = "right",
+      plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
+
+    )
+
+    return(network)
+}
+```
+
+```{r}
+# plot the network for glasso
+
+#never
+plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
+plot.never.glasso
+
+ggsave("plot_high_quality/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# find out largest cluster in glasso and create subgraph
+mem.never.glasso = membership(cluster_louvain(never.glasso))
+cluster.never.glasso = table(mem.never.glasso)
+largest_cluster.never.glasso = names(cluster.never.glasso)[which.max(cluster.never.glasso)]
+subvertice.never.glasso = which(mem.never.glasso == largest_cluster.never.glasso)
+
+subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
+subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
+subplot.never.glasso
+
+ggsave("plot_high_quality/never_glasso_largest_cluster.pdf", subplot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# recent
+plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
+plot.recent.glasso
+
+ggsave("plot_high_quality/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.recent.glasso = membership(cluster_louvain(recent.glasso))
+cluster.recent.glasso = table(mem.recent.glasso)
+largest_cluster.recent.glasso = names(cluster.recent.glasso)[which.max(cluster.recent.glasso)]
+subvertice.recent.glasso = which(mem.recent.glasso == largest_cluster.recent.glasso)
+
+subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glasso)
+subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
+subplot.recent.glasso
+
+ggsave("plot_high_quality/recent_glasso_largest_cluster.pdf", subplot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# past
+plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
+plot.past.glasso
+
+ggsave("plot_high_quality/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.past.glasso = membership(cluster_louvain(past.glasso))
+cluster.past.glasso = table(mem.past.glasso)
+largest_cluster.past.glasso = names(cluster.past.glasso)[which.max(cluster.past.glasso)]
+subvertice.past.glasso = which(mem.past.glasso == largest_cluster.past.glasso)
+
+subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
+subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
+subplot.past.glasso
+
+ggsave("plot_high_quality/past_glasso_largest_cluster.pdf", subplot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+Plot the dissimilarity network
+
+```{r}
+never.diss = dis_net(fam.mat.never, 0.5)
+recent.diss = dis_net(fam.mat.recent, 0.5)
+past.diss = dis_net(fam.mat.past, 0.5)
+
+#compute clustering
+V(never.diss)$clu = as.character(membership(cluster_louvain(never.diss)))
+V(recent.diss)$clu = as.character(membership(cluster_louvain(recent.diss)))
+V(past.diss)$clu = as.character(membership(cluster_louvain(past.diss)))
+
+# compute node size based on degree
+V(never.diss)$size = degree(never.diss)
+V(recent.diss)$size = degree(recent.diss)
+V(past.diss)$size = degree(past.diss)
+
+V(never.diss)[degree(never.diss) == 0]$clu <- "999"
+V(recent.diss)[degree(recent.diss) == 0]$clu <- "999"
+V(past.diss)[degree(past.diss) == 0]$clu <- "999"
+```
+
+```{r}
+# plot the network for dissimilarity
+
+# never
+plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.never.diss
+
+ggsave("plot_high_quality/never_diss.pdf", plot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)  
+```
+
+```{r}
+mem.never.diss = membership(cluster_louvain(never.diss))
+cluster.never.diss = table(mem.never.diss)
+largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.diss)]
+subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
+
+subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
+subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.never.diss
+
+ggsave("plot_high_quality/never_diss_largest_cluster.pdf", subplot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# recnt
+plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.recent.diss
+
+ggsave("plot_high_quality/recent_diss.pdf", plot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.recent.diss = membership(cluster_louvain(recent.diss))
+cluster.recent.diss = table(mem.recent.diss)
+largest_cluster.recent.diss = names(cluster.recent.diss)[which.max(cluster.recent.diss)]
+subvertice.recent.diss = which(mem.recent.diss == largest_cluster.recent.diss)
+
+subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
+subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.recent.diss
+
+ggsave("plot_high_quality/recent_diss_largest_cluster.pdf", subplot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# past
+plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
+plot.past.diss
+
+ggsave("plot_high_quality/past_diss.pdf", plot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.past.diss = membership(cluster_louvain(past.diss))
+cluster.past.diss = table(mem.past.diss)
+largest_cluster.past.diss = names(cluster.past.diss)[which.max(cluster.past.diss)]
+subvertice.past.diss = which(mem.past.diss == largest_cluster.past.diss)
+
+subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
+subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
+subplot.past.diss
+
+ggsave("plot_high_quality/past_diss_largest_cluster.pdf", subplot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Plot the network - correlation
+
+```{r}
+never.corr = corr_net(fam.mat.never, 0.75)
+recent.corr = corr_net(fam.mat.recent, 0.75)
+past.corr = corr_net(fam.mat.past, 0.75)
+
+# compute clustering
+V(never.corr)$clu = as.character(membership(cluster_louvain(never.corr)))
+V(recent.corr)$clu = as.character(membership(cluster_louvain(recent.corr)))
+V(past.corr)$clu = as.character(membership(cluster_louvain(past.corr)))
+
+# compute node size based on degree
+V(never.corr)$size = degree(never.corr)
+V(recent.corr)$size = degree(recent.corr)
+V(past.corr)$size = degree(past.corr)
+
+V(never.corr)[degree(never.corr) == 0]$clu <- "999"
+V(recent.corr)[degree(recent.corr) == 0]$clu <- "999"
+V(past.corr)[degree(past.corr) == 0]$clu <- "999"
+```
+
+```{r}
+#Plot the network for correlation
+
+#never
+plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
+plot.never.corr
+
+ggsave("plot_high_quality/never_corr.pdf", plot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.never.corr = membership(cluster_louvain(never.corr))
+cluster.never.corr = table(mem.never.corr)
+largest_cluster.never.corr = names(cluster.never.corr)[which.max(cluster.never.corr)]
+subvertice.never.corr = which(mem.never.corr == largest_cluster.never.corr)
+
+subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
+subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
+subplot.never.corr
+
+ggsave("plot_high_quality/never_corr_largest_cluster.pdf", subplot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# recent
+plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
+plot.recent.corr
+
+ggsave("plot_high_quality/recent_corr.pdf", plot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.recent.corr = membership(cluster_louvain(recent.corr))
+cluster.recent.corr = table(mem.recent.corr)
+largest_cluster.recent.corr = names(cluster.recent.corr)[which.max(cluster.recent.corr)]
+subvertice.recent.corr = which(mem.recent.corr == largest_cluster.recent.corr)
+
+subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
+subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
+subplot.recent.corr
+
+ggsave("plot_high_quality/recent_corr_largest_cluster.pdf", subplot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+#past
+
+plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
+plot.past.corr
+
+ggsave("plot_high_quality/past_corr.pdf", plot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+mem.past.corr = membership(cluster_louvain(past.corr))
+cluster.past.corr = table(mem.past.corr)
+largest_cluster.past.corr = names(cluster.past.corr)[which.max(cluster.past.corr)]
+subvertice.past.corr = which(mem.past.corr == largest_cluster.past.corr)
+
+subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
+subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
+subplot.past.corr
+
+ggsave("plot_high_quality/past_corr_largest_cluster.pdf", subplot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Combined Graph
+```{r}
+# get the edge list for never graph
+never.glasso.edge = get.edgelist(never.glasso)
+never.diss.edge = get.edgelist(never.diss)
+never.corr.edge = get.edgelist(never.corr)
+
+#standardize the edge list
+never.glasso.edge = t(apply(never.glasso.edge, 1, sort))
+never.diss.edge = t(apply(never.diss.edge, 1, sort))
+never.corr.edge = t(apply(never.corr.edge, 1, sort))
+
+# convert to dataframe
+never.glasso.edge_df = as.data.frame(never.glasso.edge)
+never.diss.edge_df = as.data.frame(never.diss.edge)
+never.corr.edge_df = as.data.frame(never.corr.edge)
+```
+
+```{r}
+# find intersection and unions
+edges_in_all_3_never = intersect(intersect(never.glasso.edge_df, never.diss.edge_df), never.corr.edge_df)
+
+edge_lasso_diss_never = intersect(never.glasso.edge_df, never.diss.edge_df)
+edge_lasso_corr_never = intersect(never.glasso.edge_df, never.corr.edge_df)
+edge_diss_corr_never = intersect(never.diss.edge_df, never.corr.edge_df)
+
+edges_in_2_never = unique(rbind(edge_lasso_corr_never, edge_lasso_diss_never, edge_diss_corr_never))
+edges_in_2_never = setdiff(edges_in_2_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
+
+edges_in_1_never = unique(rbind(never.glasso.edge_df, never.corr.edge_df, never.diss.edge_df))
+edges_in_1_never = setdiff(edges_in_1_never, edges_in_all_3_never)  # Exclude edges that are in all 3 networks
+edges_in_1_never = setdiff(edges_in_1_never, edges_in_2_never)  # Exclude edges that are in exactly 2 networks
+
+# identify missing taxa 
+all_taxa.never = unique(c(V(never.glasso)$name, V(never.diss)$name, V(never.corr)$name))
+combined_edges_df.never = rbind(edges_in_all_3_never, edges_in_2_never, edges_in_1_never)
+```
+
+Combined Graph for never
+```{r}
+#initialize empty graph
+combined_graph.never = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.never = add_vertices(combined_graph.never, length(all_taxa.never), name = all_taxa.never)
+
+# add edges
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_all_3_never)), weight = 3)
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_2_never)), weight = 2)
+combined_graph.never = add_edges(combined_graph.never, t(as.matrix(edges_in_1_never)), weight = 1)
+
+# add weight to edges
+combined_edges_df.never$weight = c(rep(3, nrow(edges_in_all_3_never)), rep(2, nrow(edges_in_2_never)), rep(1, nrow(edges_in_1_never)))
+E(combined_graph.never)$weight = combined_edges_df.never$weight
+V(combined_graph.never)$size = degree(combined_graph.never)
+```
+
+
+```{r}
+# Plot the first graph for never fumigated samples.
+never_combined_plot =ggraph(combined_graph.never, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 19, size = 1) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Never Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
+    legend.key.size = unit(1.5, 'cm')
+  )
+never_combined_plot
+
+ggsave("plot_high_quality/never_combined.pdf", never_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.never = subgraph.edges(combined_graph.never, E(combined_graph.never)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+never_subgraph_plot = ggraph(subgraph.never, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.never) > 15, degree(subgraph.never), 15)), size = 6,family = "serif", repel = TRUE, show.legend = FALSE) +
+  theme_graph() +
+  ggtitle("Edges in All Three Networks for Never Fumigated")
+
+never_subgraph_plot
+
+ggsave("plot_high_quality/never_subgraph.pdf", never_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Combined Graph for Recent Network
+
+```{r}
+# get the edge list for recent graph
+recent.glasso.edge = get.edgelist(recent.glasso)
+recent.diss.edge = get.edgelist(recent.diss)
+recent.corr.edge = get.edgelist(recent.corr)
+
+#standardize the edge list
+recent.glasso.edge = t(apply(recent.glasso.edge, 1, sort))
+recent.diss.edge = t(apply(recent.diss.edge, 1, sort))
+recent.corr.edge = t(apply(recent.corr.edge, 1, sort))
+
+# convert to dataframe
+recent.glasso.edge_df = as.data.frame(recent.glasso.edge)
+recent.diss.edge_df = as.data.frame(recent.diss.edge)
+recent.corr.edge_df = as.data.frame(recent.corr.edge)
+```
+
+```{r}
+# find intersection and unions
+edges_in_all_3_recent = intersect(intersect(recent.glasso.edge_df, recent.diss.edge_df), recent.corr.edge_df)
+
+edge_lasso_diss_recent = intersect(recent.glasso.edge_df, recent.diss.edge_df)
+edge_lasso_corr_recent = intersect(recent.glasso.edge_df, recent.corr.edge_df)
+edge_diss_corr_recent = intersect(recent.diss.edge_df, recent.corr.edge_df)
+
+edges_in_2_recent = unique(rbind(edge_lasso_corr_recent, edge_lasso_diss_recent, edge_diss_corr_recent))
+edges_in_2_recent = setdiff(edges_in_2_recent, edges_in_all_3_recent)  # Exclude edges that are in all 3 networks
+
+edges_in_1_recent = unique(rbind(recent.glasso.edge_df, recent.corr.edge_df, recent.diss.edge_df))
+edges_in_1_recent = setdiff(edges_in_1_recent, edges_in_all_3_recent)  # Exclude edges that are in all 3 networks
+edges_in_1_recent = setdiff(edges_in_1_recent, edges_in_2_recent)  # Exclude edges that are in exactly 2 networks
+
+# identify missing taxa 
+all_taxa.recent = unique(c(V(recent.glasso)$name, V(recent.diss)$name, V(recent.corr)$name))
+combined_edges_df.recent = rbind(edges_in_all_3_recent, edges_in_2_recent, edges_in_1_recent)
+```
+
+```{r}
+#initialize empty graph
+combined_graph.recent = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.recent = add_vertices(combined_graph.recent, length(all_taxa.recent), name = all_taxa.recent)
+
+# add edges
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_all_3_recent)), weight = 3)
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_2_recent)), weight = 2)
+combined_graph.recent = add_edges(combined_graph.recent, t(as.matrix(edges_in_1_recent)), weight = 1)
+
+# add weight to edges
+combined_edges_df.recent$weight = c(rep(3, nrow(edges_in_all_3_recent)), rep(2, nrow(edges_in_2_recent)), rep(1, nrow(edges_in_1_recent)))
+E(combined_graph.recent)$weight = combined_edges_df.recent$weight
+V(combined_graph.recent)$size = degree(combined_graph.recent)
+```
+
+```{r}
+# Plot the first graph for recent fumigated samples.
+recent_combined_plot = ggraph(combined_graph.recent, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 19, size = 1) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Recent Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
+    legend.key.size = unit(1.5, 'cm')
+  )
+
+recent_combined_plot
+
+ggsave("plot_high_quality/recent_combined.pdf", recent_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.recent = subgraph.edges(combined_graph.recent, E(combined_graph.recent)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+recent_subgraph_plot = ggraph(subgraph.recent, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.recent) > 10, degree(subgraph.recent), 10)), size = 6,family = "serif", repel = TRUE, show.legend = FALSE) +
+  theme_graph() +
+  ggtitle("Edges Present in All Three Networks for Recent Fumigated Samples")
+
+recent_subgraph_plot
+
+ggsave("plot_high_quality/recent_subgraph.pdf", recent_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Combined Graph for Past Network
+
+```{r}
+# get the edge list for past graph
+past.glasso.edge = get.edgelist(past.glasso)
+past.diss.edge = get.edgelist(past.diss)
+past.corr.edge = get.edgelist(past.corr)
+
+#standardize the edge list
+past.glasso.edge = t(apply(past.glasso.edge, 1, sort))
+past.diss.edge = t(apply(past.diss.edge, 1, sort))
+past.corr.edge = t(apply(past.corr.edge, 1, sort))
+
+# convert to dataframe
+past.glasso.edge_df = as.data.frame(past.glasso.edge)
+past.diss.edge_df = as.data.frame(past.diss.edge)
+past.corr.edge_df = as.data.frame(past.corr.edge)
+```
+
+```{r}
+# find intersection and unions
+edges_in_all_3_past = intersect(intersect(past.glasso.edge_df, past.diss.edge_df), past.corr.edge_df)
+
+edge_lasso_diss_past = intersect(past.glasso.edge_df, past.diss.edge_df)
+edge_lasso_corr_past = intersect(past.glasso.edge_df, past.corr.edge_df)
+edge_diss_corr_past = intersect(past.diss.edge_df, past.corr.edge_df)
+
+edges_in_2_past = unique(rbind(edge_lasso_corr_past, edge_lasso_diss_past, edge_diss_corr_past))
+edges_in_2_past = setdiff(edges_in_2_past, edges_in_all_3_past)  # Exclude edges that are in all 3 networks
+
+edges_in_1_past = unique(rbind(past.glasso.edge_df, past.corr.edge_df, past.diss.edge_df))
+edges_in_1_past = setdiff(edges_in_1_past, edges_in_all_3_past)  # Exclude edges that are in all 3 networks
+edges_in_1_past = setdiff(edges_in_1_past, edges_in_2_past)  # Exclude edges that are in exactly 2 networks
+
+# identify missing taxa 
+all_taxa.past = unique(c(V(past.glasso)$name, V(past.diss)$name, V(past.corr)$name))
+combined_edges_df.past = rbind(edges_in_all_3_past, edges_in_2_past, edges_in_1_past)
+```
+
+```{r}
+#initialize empty graph
+combined_graph.past = graph.empty(directed = FALSE, n = 0)
+
+# add vertices
+combined_graph.past = add_vertices(combined_graph.past, length(all_taxa.past), name = all_taxa.past)
+
+# add edges
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_all_3_past)), weight = 3)
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_2_past)), weight = 2)
+combined_graph.past = add_edges(combined_graph.past, t(as.matrix(edges_in_1_past)), weight = 1)
+
+# add weight to edges
+combined_edges_df.past$weight = c(rep(3, nrow(edges_in_all_3_past)), rep(2, nrow(edges_in_2_past)), rep(1, nrow(edges_in_1_past)))
+E(combined_graph.past)$weight = combined_edges_df.past$weight
+V(combined_graph.past)$size = degree(combined_graph.past)
+```
+
+```{r}
+# Plot the first graph for past fumigated samples.
+past_combined_plot = ggraph(combined_graph.past, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = TRUE) +
+  scale_edge_color_manual("Edge\nWeight", 
+                          values = c("1" = "#93D150", "2" = "#FFD966", "3" = "#7BC8F6"), 
+                          labels = c("1" = "Only in One Network", "2" = "In Two Networks", "3" = "In All Three Networks")) +
+  geom_node_point(shape = 19, size = 1) +
+  #geom_node_text(aes(filter = size >= 90, label = name), family = "serif", repel = TRUE) +
+  scale_size(range = c(1, 6)) +
+  theme_graph() +
+  ggtitle("Combined Graph for Past Fumigated Samples") + 
+  theme(
+    plot.title = element_text(size = 30), 
+    legend.title = element_text(size = 27),
+    legend.text = element_text(size = 25),
+    legend.key.size = unit(1.5, 'cm')
+  )
+
+past_combined_plot
+
+ggsave("plot_high_quality/past_combined.pdf", past_combined_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# create a subgraph with only the edges that are in all 3 networks
+subgraph.past = subgraph.edges(combined_graph.past, E(combined_graph.past)[weight == 3], delete.vertices = TRUE)
+
+# plot the subgraph
+past_subgraph_plot = ggraph(subgraph.past, layout = "fr") +
+  geom_edge_link0(aes(edge_color = as.factor(weight)), show.legend = FALSE) +
+  scale_edge_color_discrete("Edge\nWeight", labels = c("3" = "In All Three Networks")) +
+  geom_node_point(aes(fill = "#E99093"), shape = 21, size = 3, show.legend = FALSE) +
+  geom_node_text(aes(filter = size >= 25, label = name, size = ifelse(degree(subgraph.past) > 12, degree(subgraph.past), 12)), size = 6,family = "serif", repel = TRUE, show.legend =  FALSE) +
+  theme_graph() +
+  ggtitle("Edges Present in All Three Networks for Past Fumigated Samples")
+
+past_subgraph_plot
+
+ggsave("plot_high_quality/past_subgraph.pdf", past_subgraph_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+Identify Different nodes/taxas in 3 network.
+
+```{r}
+# degree centrality
+degree.never = degree(combined_graph.never)
+degree.recent = degree(combined_graph.recent)
+degree.past = degree(combined_graph.past)
+
+# betweness
+betweenness.never = betweenness(combined_graph.never)
+betweenness.recent = betweenness(combined_graph.recent)
+betweenness.past = betweenness(combined_graph.past)
+
+degree_df = data.frame(
+  names = names(V(combined_graph.never)),
+  degree.never = degree.never,
+  degree.recent = degree.recent,
+  degree.past = degree.past
+)
+```
+
+3 plot showing the distribution of degrees.
+
+```{r}
+ggplot(degree_df, aes(x= degree.never, y = degree.recent)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Never Fumigated Samples", y = "Degree in Recent Fumigated Samples") +
+  ggtitle("Degree Distribution for Never and Recent Fumigated Samples") +
+  theme_minimal()
+
+ggplot(degree_df, aes(x= degree.never, y = degree.past)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Never Fumigated Samples", y = "Degree in Past Fumigated Samples") +
+  ggtitle("Degree Distribution for Never and Past Fumigated Samples") +
+  theme_minimal()
+
+ggplot(degree_df, aes(x= degree.recent, y = degree.past)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  labs(x = "Degree in Recent Fumigated Samples", y = "Degree in Past Fumigated Samples") +
+  ggtitle("Degree Distribution for Recent and Past Fumigated Samples") +
+  theme_minimal()
+```
+
+
+
+Comparing network as a whole on degree and betweness.
+
+```{r}
+# calculate degree and betweenness for each network
+glasso.degree.never = degree(never.glasso)
+glasso.degree.recent = degree(recent.glasso)
+glasso.degree.past = degree(past.glasso)
+
+glasso.betweenness.never = betweenness(never.glasso)
+glasso.betweenness.recent = betweenness(recent.glasso)
+glasso.betweenness.past = betweenness(past.glasso)
+
+diss.degree.never = degree(never.diss)
+diss.degree.recent = degree(recent.diss)
+diss.degree.past = degree(past.diss)
+
+diss.betweenness.never = betweenness(never.diss)
+diss.betweenness.recent = betweenness(recent.diss)
+diss.betweenness.past = betweenness(past.diss)
+
+corr.degree.never = degree(never.corr)
+corr.degree.recent = degree(recent.corr)
+corr.degree.past = degree(past.corr)
+
+corr.betweenness.never = betweenness(never.corr)
+corr.betweenness.recent = betweenness(recent.corr)
+corr.betweenness.past = betweenness(past.corr)
+```
+
+
+Here is boxplot for overall combined graph.
+
+```{r}
+overall_df = data.frame(
+  fumigation_status = c(rep("never", length(degree.never)), rep("recent", length(degree.recent)), rep("past", length(degree.past))),
+  degree = c(degree.never, degree.recent, degree.past)
+)
+
+dg_combined_bp = ggplot(overall_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_combined_bp
+
+ggsave("plot_high_quality/dg_combined_bp.pdf", dg_combined_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+overall_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(betweenness.never)), rep("recent", length(betweenness.recent)), rep("past", length(betweenness.past))),
+  betweenness = c(betweenness.never, betweenness.recent, betweenness.past)
+)
+
+bt_combined_bp = ggplot(overall_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Combined Graph") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+bt_combined_bp
+
+ggsave("plot_high_quality/bt_combined_bp.pdf", bt_combined_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Glasso
+```{r}
+glasso_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.degree.never)), rep("recent", length(glasso.degree.recent)), rep("past", length(glasso.degree.past))),
+  degree = c(glasso.degree.never, glasso.degree.recent, glasso.degree.past)
+)
+
+dg_glasso_bp = ggplot(glasso_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_glasso_bp
+
+ggsave("plot_high_quality/dg_glasso_bp.pdf", dg_glasso_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+```{r}
+glasso_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(glasso.betweenness.never)), rep("recent", length(glasso.betweenness.recent)), rep("past", length(glasso.betweenness.past))),
+  betweenness = c(glasso.betweenness.never, glasso.betweenness.recent, glasso.betweenness.past)
+)
+
+bt_glasso_bp = ggplot(glasso_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+bt_glasso_bp
+
+ggsave("plot_high_quality/bt_glasso_bp.pdf", bt_glasso_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Dissimilarity
+```{r}
+diss_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.degree.never)), rep("recent", length(diss.degree.recent)), rep("past", length(diss.degree.past))),
+  degree = c(diss.degree.never, diss.degree.recent, diss.degree.past)
+)
+
+dg_diss_bp = ggplot(diss_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_diss_bp
+
+ggsave("plot_high_quality/dg_diss_bp.pdf", dg_diss_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+diss_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(diss.betweenness.never)), rep("recent", length(diss.betweenness.recent)), rep("past", length(diss.betweenness.past))),
+  betweenness = c(diss.betweenness.never, diss.betweenness.recent, diss.betweenness.past)
+)
+
+bt_diss_bp = ggplot(diss_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Dissimilarity Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+bt_diss_bp
+
+ggsave("plot_high_quality/bt_diss_bp.pdf", bt_diss_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Correlation
+```{r}
+corr_degree_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.degree.never)), rep("recent", length(corr.degree.recent)), rep("past", length(corr.degree.past))),
+  degree = c(corr.degree.never, corr.degree.recent, corr.degree.past)
+)
+
+dg_corr_bp = ggplot(corr_degree_df, aes(x = fumigation_status, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_corr_bp
+
+ggsave("plot_high_quality/dg_corr_bp.pdf", dg_corr_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+```{r}
+corr_betweenness_df = data.frame(
+  fumigation_status = c(rep("never", length(corr.betweenness.never)), rep("recent", length(corr.betweenness.recent)), rep("past", length(corr.betweenness.past))),
+  betweenness = c(corr.betweenness.never, corr.betweenness.recent, corr.betweenness.past)
+)
+
+bt_corr_bp = ggplot(corr_betweenness_df, aes(x = fumigation_status, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Correlation Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+bt_corr_bp
+
+ggsave("plot_high_quality/bt_corr_bp.pdf", bt_corr_bp, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+TODO: we can also compare GDV in future.
+
+Let's find the 20 most different one.
+
+```{r}
+degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
+betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
+
+difference_df = data.frame(
+  names = names(degree_difference),
+  degree_difference = degree_difference,
+  betweeness_difference = betweeness_difference
+)
+
+difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
+
+difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
+
+top_20 = difference_df[1:20,]
+```
+
+Here is the names of the top 20 different nodes.
+
+```{r}
+top_20$names
+```
+
+Now, we fit carlasso model to 20 taxas.
+
+```{r}
+never_fumigated = samp_metadata %>% 
+  filter(fumigation == "never") %>%
+  pull(sample_name)
+
+recent_fumigated = samp_metadata %>%
+  filter(fumigation == "recent") %>%
+  pull(sample_name)
+
+past_fumigated = samp_metadata %>%
+  filter(fumigation == "past") %>%
+  pull(sample_name)
+
+fam_df = as.data.frame(fam.mat)
+fam_df = fam_df %>%
+  mutate(sample_name = rownames(fam_df)) %>%
+  mutate(fumigation_status = case_when(
+    sample_name %in% never_fumigated ~ "never",
+    sample_name %in% recent_fumigated ~ "recent",
+    sample_name %in% past_fumigated ~ "past"
+  ))
+fam_df$Treatment = samp_metadata$Treatment
+
+otus = top_20$names
+otu_quoted = paste0("`", otus, "`")
+formula = paste(otu_quoted, collapse = "+")
+formula_both = paste(formula, "~ fumigation_status+Treatment")
+formula_both = as.formula(formula_both)
+```
+
+```{r}
+# write top 20 to csv
+write.csv(top_20, "top_20.csv")
+```
+
+Run CARlasso
+
+```{r}
+response = CARlasso(formula_both, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response.horse = horseshoe(response)
+```
+
+```{r}
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_both_plot = plot(response.horse) + 
+  theme(
+
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_both.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_both.pdf", bact_both_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+CARlasso for only single response
+
+```{r}
+formula_single = paste(formula, "~ fumigation_status")
+formula_single = as.formula(formula_single)
+```
+
+```{r}
+response2 = CARlasso(formula_single, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response2.horse = horseshoe(response2)
+```
+
+```{r}
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_single_plot = plot(response2.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.5, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_single.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response2.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_single.pdf", bact_single_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+CARlasso on top 10 most different taxa.
+
+```{r}
+top10 = difference_df[1:10,]
+otus10 = top10$names
+otu_quoted10 = paste0("`", otus10, "`")
+formula10 = paste(otu_quoted10, collapse = "+")
+formula_both10 = paste(formula10, "~ fumigation_status+Treatment")
+formula_both10 = as.formula(formula_both10)
+```
+
+```{r}
+response10 = CARlasso(formula_both10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response10.horse = horseshoe(response10)
+```
+
+```{r}
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_both_10_plot = plot(response10.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_both_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# plot(response10.horse)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_both_10.pdf", bact_both_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+formula_single10 = paste(formula10, "~ fumigation_status")
+formula_single10 = as.formula(formula_single10)
+```
+
+```{r}
+response10_2 = CARlasso(formula_single10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response10_2.horse = horseshoe(response10_2)
+```
+
+```{r}
+# save plot
+# options(repr.plot.res = 1200)
+# par(mar = c(5, 4, 4, 2) + 0.1)
+bact_single_10_plot = plot(response10_2.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+# cairo_pdf("plot_high_quality/carlasso_plot_bact_single_10.pdf", width = 12, height = 10, bg = "white", fallback_resolution = 1200, onefile = TRUE)
+# dev.off()
+ggsave("plot_high_quality/carlasso_plot_bact_single_10.pdf", bact_single_10_plot, width = 15, height = 15, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+## Investigation
+
+```{r}
+r2.data = response2.horse$point_est$CAR$C
+r210.data = response10_2.horse$point_est$CAR$C
+```
+
+Appears CARlasso on a subset of taxa's result is different than the whole set.
+
+```{r}
+#never dataframe
+never_mat = fam.mat[never_fumigated,]
+recent_mat = fam.mat[recent_fumigated,]
+past_mat = fam.mat[past_fumigated,]
+
+d1 = sum(never_mat[,"Diplorickettsiaceae"])
+d2 = sum(recent_mat[,"Diplorickettsiaceae"])
+d3 = sum(past_mat[,"Diplorickettsiaceae"])
+```
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+for (name in top_20$names) {
+  d1 = sum(never_mat[,name])
+  d2 = sum(recent_mat[,name])
+  d3 = sum(past_mat[,name])
+  print(paste(name, d1, d2, d3))
+}
+```
+
+The top 20's taxa's abundance is different in never, recent, past. (Sum across all samples of corresponding fumigation status)
+
+Now, we classify the top 20 taxa into 3 groups.
+1. Abundance in recent is lower than never, and past is higher than recent but lower than never.
+2. Abundance in recent is higher than never, and past is lower than recent but higher than never.
+3. Abundance in recent is higher than never, and past is higher.
+4. Abundance in recent is lower than never, and past is lower.
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+group_df = data.frame(
+  names = top_20$names,
+  d1 = NA,
+  d2 = NA,
+  d3 = NA,
+  group = NA
+)
+
+for (name in top_20$names) {
+  d1 = sum(never_mat[,name]) / length(never_fumigated)
+  d2 = sum(recent_mat[,name]) / length(recent_fumigated)
+  d3 = sum(past_mat[,name]) / length(past_fumigated)
+  if ((d2 < d1) && (d3 < d1)) {
+    group = 1
+  }
+  if ((d2 < d1) && (d3 > d2) && (d3 > d1)) {
+    group = 2
+  }
+  if ((d2 > d1) && (d3 > d2)) {
+    group = 3
+  }
+  if ((d2 > d1) && (d3 < d2)) {
+    group = 3
+  }
+  group_df[group_df$names == name,]$d1 = d1
+  group_df[group_df$names == name,]$d2 = d2
+  group_df[group_df$names == name,]$d3 = d3
+  group_df[group_df$names == name,]$group = group
+}
+group_df
+```
+
+
+Analysis of Edges identified by all 3 networks
+
+```{r}
+# get otu from edges in all 3 networks
+otu.never = union(edges_in_all_3_never$V1, edges_in_all_3_never$V2)
+otu.recent = union(edges_in_all_3_recent$V1, edges_in_all_3_recent$V2)
+otu.past = union(edges_in_all_3_past$V1, edges_in_all_3_past$V2)
+
+overall = union(otu.never, otu.recent)
+overall = union(overall, otu.past)
+
+otu.never
+otu.recent
+otu.past
+overall
+```
+
+```{r}
+# function to make a df with otu and their abundance in each fumigation status
+otu_df = function(names) {
+  new_df = data.frame(
+  names = names,
+  d1 = NA,
+  d2 = NA,
+  d3 = NA,
+  group = NA
+  )
+  for (name in names) {
+    d1 = sum(never_mat[,name]) / length(never_fumigated)
+    d2 = sum(recent_mat[,name]) / length(recent_fumigated)
+    d3 = sum(past_mat[,name]) / length(past_fumigated)
+    if ((d2 < d1) && (d3 < d1)) {
+      group = 1
+    }
+    if ((d2 < d1) && (d3 > d2) && (d3 > d1)) {
+      group = 2
+    }
+    if ((d2 > d1) && (d3 > d2)) {
+      group = 3
+    }
+    if ((d2 > d1) && (d3 < d2)) {
+      group = 3
+    }
+    new_df[new_df$names == name,]$d1 = d1
+    new_df[new_df$names == name,]$d2 = d2
+    new_df[new_df$names == name,]$d3 = d3
+    new_df[new_df$names == name,]$group = group
+  }
+  return(new_df)
+}
+```
+
+```{r}
+# make df for otu in all 3 networks
+all_3_never_df = otu_df(otu.never)
+all_3_recent_df = otu_df(otu.recent)
+all_3_past_df = otu_df(otu.past)
+
+all_3_never_df
+all_3_recent_df
+all_3_past_df
+```
