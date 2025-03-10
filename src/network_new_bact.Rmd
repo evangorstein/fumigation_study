@@ -59,6 +59,17 @@ fam.mat = t(fam.mat)
 
 ```
 
+Extract the phylum mapping for each family
+```{r}
+phylum_mapping = bac_abundance %>%
+  select(Family, Phylum) %>%
+  mutate(Phylum = as.character(Phylum), Family = as.character(Family)) %>%
+  mutate(Phylum = replace_na(Phylum, "Unknown")) %>%
+  group_by(Family) %>%
+  summarise(Phylum = first(Phylum)) %>%
+  {setNames(.$Phylum, .$Family)}
+```
+
 ```{r}
 # add sample number to metadata for each samples.
 samp_metadata = samp_metadata %>%
@@ -213,25 +224,6 @@ Here is the function to create a plot.
 
 ```{r}
 # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
-plot_network = function(net, title, filter){
-    network = ggraph(net, layout = "fr") +
-    geom_edge_link0(color = "grey66") +
-    geom_node_point(aes(fill = clu, size = size), shape = 21) +
-    geom_node_text(aes(filter = size > filter, label = name, size = ifelse(degree(net) > 15, degree(net), 15)), family = "serif", repel = TRUE, show.legend = FALSE) +
-    scale_edge_width(range = c(0.2, 3)) +
-    scale_size(range = c(1, 6)) +
-    scale_fill_viridis(discrete = TRUE, option = "viridis") +
-    theme_void() +
-    theme(
-      legend.position = "right",
-      plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
-
-    )
-
-    return(network)
-}
-
-# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
 plot_circular_network = function(net, title, filter){
     network = ggraph(net, layout = "circle") +
     geom_edge_link0(color = "grey66") +
@@ -255,10 +247,10 @@ plot_circular_network = function(net, title, filter){
 # plot the network for glasso
 
 #never
-plot.never.glasso = plot_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
+plot.never.glasso = plot_concentric_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", 99)
 plot.never.glasso
 
-ggsave("plot_high_quality/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 ```{r}
