@@ -31,6 +31,7 @@ library(ggforce)
 library(ggplot2)
 library(CARlasso)
 library(viridis)
+library(VennDiagram)
 ```
 
 Read in the data
@@ -138,34 +139,7 @@ glasso_net = function(mat, rho){
 
     net.glasso = graph.adjacency(parr.corr.net, mode = "undirected", weighted = TRUE, diag = FALSE)
     return(net.glasso)
-}
-
-# function for dissimilarity matrix
-dis_net = function(mat, cutoff){
-    # TODO: considering normalizing the data?
-    # Normalize the data
-    mat = t(mat)
-    #print(library_size)
-    fam.ls = t( t(mat) / colSums(mat))
-    
-    normal_mat = t(fam.ls)
-    diss.mat = as.matrix(vegdist(t(normal_mat)), method = "bray")
-    diss.adj = ifelse(diss.mat <= cutoff, 1, 0)
-    # change all NA to 1
-    diss.adj[is.na(diss.adj)] = 1
-    net.diss = graph.adjacency(diss.adj, mode = "undirected", diag = FALSE)
-    return(net.diss)
-}
-
-# function for correlation matrix method
-corr_net = function(mat, cutoff){
-    mat = mat + 0.5
-    mat = clr(mat)
-    cor.mat = cor(mat, method = "pearson")
-    corr.adj = ifelse(abs(cor.mat) >= cutoff, 1, 0)
-    net.corr = graph.adjacency(corr.adj, mode = "undirected", diag = FALSE)
-    return(net.corr)
-}
+}   
 ```
 
 Set scale_edge_color_discrete
@@ -259,237 +233,121 @@ plot.never.glasso
 ggsave("plot_circular/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
-```{r}
-# find out largest cluster in glasso and create subgraph
-mem.never.glasso = membership(cluster_louvain(never.glasso))
-cluster.never.glasso = table(mem.never.glasso)
-largest_cluster.never.glasso = names(cluster.never.glasso)[which.max(cluster.never.glasso)]
-subvertice.never.glasso = which(mem.never.glasso == largest_cluster.never.glasso)
-
-subgraph.never.glasso = induced_subgraph(never.glasso, subvertice.never.glasso)
-subplot.never.glasso = plot_network(subgraph.never.glasso, "Largest Cluster of Network for Never Fumigated Samples Using Glasso", 0)
-subplot.never.glasso
-
-ggsave("plot_high_quality/never_glasso_largest_cluster.pdf", subplot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
 ```{r}
 # recent
-plot.recent.glasso = plot_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", 99)
+plot.recent.glasso = plot_circular_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", phylum_mapping, 99)
 plot.recent.glasso
 
-ggsave("plot_high_quality/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
-```{r}
-mem.recent.glasso = membership(cluster_louvain(recent.glasso))
-cluster.recent.glasso = table(mem.recent.glasso)
-largest_cluster.recent.glasso = names(cluster.recent.glasso)[which.max(cluster.recent.glasso)]
-subvertice.recent.glasso = which(mem.recent.glasso == largest_cluster.recent.glasso)
-
-subgraph.recent.glasso = induced_subgraph(recent.glasso, subvertice.recent.glasso)
-subplot.recent.glasso = plot_network(subgraph.recent.glasso, "Largest Cluster of Network for Recent Fumigated Samples Using Glasso", 0)
-subplot.recent.glasso
-
-ggsave("plot_high_quality/recent_glasso_largest_cluster.pdf", subplot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
 ```{r}
 # past
-plot.past.glasso = plot_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", 99)
+plot.past.glasso = plot_circular_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", phylum_mapping, 99)
 plot.past.glasso
 
-ggsave("plot_high_quality/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+Now, find intersection of edges between the 3 networks.
+
+```{r}
+# function to create a venn diagram for 3 networks
+create_triple_venn = function(net1, net2, net3, names) {
+  # Get edge lists and standardize them
+  edges1 = get.edgelist(net1)
+  edges2 = get.edgelist(net2)
+  edges3 = get.edgelist(net3)
+  
+  # Sort each edge to ensure consistent representation
+  edges1 = t(apply(edges1, 1, sort))
+  edges2 = t(apply(edges2, 1, sort))
+  edges3 = t(apply(edges3, 1, sort))
+  
+  # Convert to dataframes for easier comparison
+  edges1_df = as.data.frame(edges1)
+  edges2_df = as.data.frame(edges2)
+  edges3_df = as.data.frame(edges3)
+  
+  # Create a unique identifier for each edge
+  edges1_df$edge_id = paste(edges1_df$V1, edges1_df$V2, sep = "_")
+  edges2_df$edge_id = paste(edges2_df$V1, edges2_df$V2, sep = "_")
+  edges3_df$edge_id = paste(edges3_df$V1, edges3_df$V2, sep = "_")
+  
+  # Get unique edge IDs for each network
+  edges_set1 = edges1_df$edge_id
+  edges_set2 = edges2_df$edge_id
+  edges_set3 = edges3_df$edge_id
+  
+  # Create the Venn diagram
+  venn_plot = draw.triple.venn(
+    area1 = length(edges_set1),
+    area2 = length(edges_set2),
+    area3 = length(edges_set3),
+    n12 = length(intersect(edges_set1, edges_set2)),
+    n23 = length(intersect(edges_set2, edges_set3)),
+    n13 = length(intersect(edges_set1, edges_set3)),
+    n123 = length(intersect(intersect(edges_set1, edges_set2), edges_set3)),
+    category = c(
+      paste0(names[1], " (", length(edges_set1), ")"),
+      paste0(names[2], " (", length(edges_set2), ")"),
+      paste0(names[3], " (", length(edges_set3), ")")
+    ),
+    fill = c("#1B9E77", "#D95F02", "#7570B3"),
+    alpha = 0.5,
+    lty = "solid",
+    cex = 1.5,
+    cat.cex = 1.2,
+    cat.dist = 0.05,
+    cat.pos = c(0, 0, 180)
+  )
+  
+  return(venn_plot)
+}
+```
+
+Plot the venn diagram for the 3 networks
+
+```{r}
+venn_plot = create_triple_venn(never.glasso, recent.glasso, past.glasso, c("Never", "Recent", "Past"))
+grid.draw(venn_plot)
 ```
 
 ```{r}
-mem.past.glasso = membership(cluster_louvain(past.glasso))
-cluster.past.glasso = table(mem.past.glasso)
-largest_cluster.past.glasso = names(cluster.past.glasso)[which.max(cluster.past.glasso)]
-subvertice.past.glasso = which(mem.past.glasso == largest_cluster.past.glasso)
+options(repr.plot.res = 1200)    # Set global resolution to 1200 DPI
+par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
 
-subgraph.past.glasso = induced_subgraph(past.glasso, subvertice.past.glasso)
-subplot.past.glasso = plot_network(subgraph.past.glasso, "Largest Cluster of Network for Past Fumigated Samples Using Glasso", 0)
-subplot.past.glasso
-
-ggsave("plot_high_quality/past_glasso_largest_cluster.pdf", subplot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+cairo_pdf(here("plot_circular", "venn_plot.pdf"), 
+    width = 12, 
+    height = 15,
+    family = "ArialMT",
+    fallback_resolution = 1200,  # Set DPI to 1200
+    onefile = TRUE)
+grid.draw(venn_plot)
+dev.off()
 ```
 
 
-Plot the dissimilarity network
 
-```{r}
-never.diss = dis_net(fam.mat.never, 0.5)
-recent.diss = dis_net(fam.mat.recent, 0.5)
-past.diss = dis_net(fam.mat.past, 0.5)
 
-#compute clustering
-V(never.diss)$clu = as.character(membership(cluster_louvain(never.diss)))
-V(recent.diss)$clu = as.character(membership(cluster_louvain(recent.diss)))
-V(past.diss)$clu = as.character(membership(cluster_louvain(past.diss)))
 
-# compute node size based on degree
-V(never.diss)$size = degree(never.diss)
-V(recent.diss)$size = degree(recent.diss)
-V(past.diss)$size = degree(past.diss)
 
-V(never.diss)[degree(never.diss) == 0]$clu <- "999"
-V(recent.diss)[degree(recent.diss) == 0]$clu <- "999"
-V(past.diss)[degree(past.diss) == 0]$clu <- "999"
-```
 
-```{r}
-# plot the network for dissimilarity
 
-# never
-plot.never.diss = plot_network(never.diss, "Network for Never Fumigated Samples Using Dissimilarity Matrix", 99)
-plot.never.diss
 
-ggsave("plot_high_quality/never_diss.pdf", plot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)  
-```
 
-```{r}
-mem.never.diss = membership(cluster_louvain(never.diss))
-cluster.never.diss = table(mem.never.diss)
-largest_cluster.never.diss = names(cluster.never.diss)[which.max(cluster.never.diss)]
-subvertice.never.diss = which(mem.never.diss == largest_cluster.never.diss)
 
-subgraph.never.diss = induced_subgraph(never.diss, subvertice.never.diss)
-subplot.never.diss = plot_network(subgraph.never.diss, "Largest Cluster of Network for Never Fumigated Samples Using Dissimilarity Matrix", 0)
-subplot.never.diss
 
-ggsave("plot_high_quality/never_diss_largest_cluster.pdf", subplot.never.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
-```{r}
-# recnt
-plot.recent.diss = plot_network(recent.diss, "Network for Recent Fumigated Samples Using Dissimilarity Matrix", 99)
-plot.recent.diss
 
-ggsave("plot_high_quality/recent_diss.pdf", plot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
-```{r}
-mem.recent.diss = membership(cluster_louvain(recent.diss))
-cluster.recent.diss = table(mem.recent.diss)
-largest_cluster.recent.diss = names(cluster.recent.diss)[which.max(cluster.recent.diss)]
-subvertice.recent.diss = which(mem.recent.diss == largest_cluster.recent.diss)
 
-subgraph.recent.diss = induced_subgraph(recent.diss, subvertice.recent.diss)
-subplot.recent.diss = plot_network(subgraph.recent.diss, "Largest Cluster of Network for Recent Fumigated Samples Using Dissimilarity Matrix", 0)
-subplot.recent.diss
 
-ggsave("plot_high_quality/recent_diss_largest_cluster.pdf", subplot.recent.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
-```{r}
-# past
-plot.past.diss = plot_network(past.diss, "Network for Past Fumigated Samples Using Dissimilarity Matrix", 99)
-plot.past.diss
 
-ggsave("plot_high_quality/past_diss.pdf", plot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-mem.past.diss = membership(cluster_louvain(past.diss))
-cluster.past.diss = table(mem.past.diss)
-largest_cluster.past.diss = names(cluster.past.diss)[which.max(cluster.past.diss)]
-subvertice.past.diss = which(mem.past.diss == largest_cluster.past.diss)
-
-subgraph.past.diss = induced_subgraph(past.diss, subvertice.past.diss)
-subplot.past.diss = plot_network(subgraph.past.diss, "Largest Cluster of Network for Past Fumigated Samples Using Dissimilarity Matrix", 0)
-subplot.past.diss
-
-ggsave("plot_high_quality/past_diss_largest_cluster.pdf", subplot.past.diss, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-Plot the network - correlation
-
-```{r}
-never.corr = corr_net(fam.mat.never, 0.75)
-recent.corr = corr_net(fam.mat.recent, 0.75)
-past.corr = corr_net(fam.mat.past, 0.75)
-
-# compute clustering
-V(never.corr)$clu = as.character(membership(cluster_louvain(never.corr)))
-V(recent.corr)$clu = as.character(membership(cluster_louvain(recent.corr)))
-V(past.corr)$clu = as.character(membership(cluster_louvain(past.corr)))
-
-# compute node size based on degree
-V(never.corr)$size = degree(never.corr)
-V(recent.corr)$size = degree(recent.corr)
-V(past.corr)$size = degree(past.corr)
-
-V(never.corr)[degree(never.corr) == 0]$clu <- "999"
-V(recent.corr)[degree(recent.corr) == 0]$clu <- "999"
-V(past.corr)[degree(past.corr) == 0]$clu <- "999"
-```
-
-```{r}
-#Plot the network for correlation
-
-#never
-plot.never.corr = plot_network(never.corr, "Network for Never Fumigated Samples Using Correlation Matrix", 99)
-plot.never.corr
-
-ggsave("plot_high_quality/never_corr.pdf", plot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-mem.never.corr = membership(cluster_louvain(never.corr))
-cluster.never.corr = table(mem.never.corr)
-largest_cluster.never.corr = names(cluster.never.corr)[which.max(cluster.never.corr)]
-subvertice.never.corr = which(mem.never.corr == largest_cluster.never.corr)
-
-subgraph.never.corr = induced_subgraph(never.corr, subvertice.never.corr)
-subplot.never.corr = plot_network(subgraph.never.corr, "Largest Cluster of Network for Never Fumigated Samples Using Correlation Matrix", 0)
-subplot.never.corr
-
-ggsave("plot_high_quality/never_corr_largest_cluster.pdf", subplot.never.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-# recent
-plot.recent.corr = plot_network(recent.corr, "Network for Recent Fumigated Samples Using Correlation Matrix", 99)
-plot.recent.corr
-
-ggsave("plot_high_quality/recent_corr.pdf", plot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-mem.recent.corr = membership(cluster_louvain(recent.corr))
-cluster.recent.corr = table(mem.recent.corr)
-largest_cluster.recent.corr = names(cluster.recent.corr)[which.max(cluster.recent.corr)]
-subvertice.recent.corr = which(mem.recent.corr == largest_cluster.recent.corr)
-
-subgraph.recent.corr = induced_subgraph(recent.corr, subvertice.recent.corr)
-subplot.recent.corr = plot_network(subgraph.recent.corr, "Largest Cluster of Network for Recent Fumigated Samples Using Correlation Matrix", 0)
-subplot.recent.corr
-
-ggsave("plot_high_quality/recent_corr_largest_cluster.pdf", subplot.recent.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-#past
-
-plot.past.corr = plot_network(past.corr, "Network for Past Fumigated Samples Using Correlation Matrix", 99)
-plot.past.corr
-
-ggsave("plot_high_quality/past_corr.pdf", plot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
-
-```{r}
-mem.past.corr = membership(cluster_louvain(past.corr))
-cluster.past.corr = table(mem.past.corr)
-largest_cluster.past.corr = names(cluster.past.corr)[which.max(cluster.past.corr)]
-subvertice.past.corr = which(mem.past.corr == largest_cluster.past.corr)
-
-subgraph.past.corr = induced_subgraph(past.corr, subvertice.past.corr)
-subplot.past.corr = plot_network(subgraph.past.corr, "Largest Cluster of Network for Past Fumigated Samples Using Correlation Matrix", 0)
-subplot.past.corr
-
-ggsave("plot_high_quality/past_corr_largest_cluster.pdf", subplot.past.corr, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
-```
 
 Combined Graph
 ```{r}
