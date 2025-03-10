@@ -330,8 +330,98 @@ grid.draw(venn_plot)
 dev.off()
 ```
 
+Draw the network for edges in all 3 networks
 
+```{r}
+# Function to create and plot a network with edges common to all three networks
+plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, node_size = 3, edge_threshold = 0.07) {
+  # Get edge lists and standardize them
+  edges1 = get.edgelist(net1)
+  edges2 = get.edgelist(net2)
+  edges3 = get.edgelist(net3)
+  
+  # Sort each edge to ensure consistent representation
+  edges1 = t(apply(edges1, 1, sort))
+  edges2 = t(apply(edges2, 1, sort))
+  edges3 = t(apply(edges3, 1, sort))
+  
+  # Convert to dataframes for easier comparison
+  edges1_df = as.data.frame(edges1)
+  edges2_df = as.data.frame(edges2)
+  edges3_df = as.data.frame(edges3)
+  
+  # Create a unique identifier for each edge
+  edges1_df$edge_id = paste(edges1_df$V1, edges1_df$V2, sep = "_")
+  edges2_df$edge_id = paste(edges2_df$V1, edges2_df$V2, sep = "_")
+  edges3_df$edge_id = paste(edges3_df$V1, edges3_df$V2, sep = "_")
+  
+  # Find edges common to all three networks
+  common_edges_ids = intersect(intersect(edges1_df$edge_id, edges2_df$edge_id), edges3_df$edge_id)
+  
+  # Extract the common edges
+  common_edges = edges1_df[edges1_df$edge_id %in% common_edges_ids, c("V1", "V2")]
+  
+  # Create a new graph with only the common edges
+  # First, identify all unique nodes in the common edges
+  all_nodes = unique(c(common_edges$V1, common_edges$V2))
+  
+  # Create an empty graph
+  common_graph = graph.empty(directed = FALSE, n = length(all_nodes))
+  V(common_graph)$name = all_nodes
+  
+  # Add the common edges
+  common_graph = add_edges(common_graph, t(as.matrix(common_edges)))
+  
+  # Add phylum information to nodes
+  V(common_graph)$phylum = phylum_mapping[V(common_graph)$name]
+  V(common_graph)$phylum[is.na(V(common_graph)$phylum)] = "Unknown_Phylum"
+  
+  # Calculate node degree for sizing text
+  V(common_graph)$degree = degree(common_graph)
 
+  # filter out edges with weight less than edge_threshold
+  common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
+  
+  # Create the plot
+  network_plot = ggraph(common_graph, layout = "circle") +
+    geom_edge_link0(color = "#7BC8F6", width = 0.8) +
+    geom_node_point(aes(fill = phylum), shape = 21, size = node_size) +
+    geom_node_text(aes(label = name, size = ifelse(degree > 2, degree, 2)), 
+                  family = "serif", repel = TRUE, show.legend = FALSE) +
+    scale_size(range = c(2, 5)) +
+    scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
+    theme_graph() +
+    ggtitle(title) +
+    theme(
+      plot.title = element_text(size = 16, hjust = 0.5),
+      legend.position = "right",
+      legend.title = element_text(size = 12),
+      legend.text = element_text(size = 10)
+    )
+  
+  return(list(plot = network_plot, graph = common_graph))
+}
+```
+
+```{r}
+#Now use the function for each fumigation condition
+# For never fumigated samples
+never_common_result = plot_common_edges_network(
+  never.glasso, recent.glasso, past.glasso,
+  "Common Edges Across All Three Glasso Networks",
+  phylum_mapping
+)
+
+# Display the plot
+never_common_result$plot
+
+# Save the plot
+ggsave("plot_circular/never_common_edges.pdf", 
+       never_common_result$plot, 
+       width = 12, height = 10, dpi = 600, 
+       device = cairo_pdf, bg = "white", limitsize = FALSE)
+
+```
 
 
 
