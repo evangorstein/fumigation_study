@@ -306,7 +306,7 @@ print(paste("The global edge threshold is", egde_threshold_global))
 plot.never.glasso = plot_circular_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
 plot.never.glasso
 
-ggsave("plot_circular/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/bacteria/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -315,7 +315,7 @@ ggsave("plot_circular/never_glasso.pdf", plot.never.glasso, width = 12, height =
 plot.recent.glasso = plot_circular_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
 plot.recent.glasso
 
-ggsave("plot_circular/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/bacteria/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -324,7 +324,7 @@ ggsave("plot_circular/recent_glasso.pdf", plot.recent.glasso, width = 12, height
 plot.past.glasso = plot_circular_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
 plot.past.glasso
 
-ggsave("plot_circular/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/bacteria/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -533,7 +533,7 @@ never_common_result = plot_common_edges_network(
 never_common_result$plot
 
 # Save the plot
-ggsave("plot_circular/never_common_edges.pdf", 
+ggsave("plot_circular/bacteria/never_common_edges.pdf", 
        never_common_result$plot, 
        width = 12, height = 10, dpi = 600, 
        device = cairo_pdf, bg = "white", limitsize = FALSE)
@@ -736,7 +736,7 @@ for (i in 1:3) {
   if (!is.null(unique_result$plots[[i]])) {
     print(unique_result$plots[[i]])
     method_name = c("Never", "Recent", "Past")[i]
-    ggsave(paste0("plot_circular/never_unique_", method_name, ".pdf"), 
+    ggsave(paste0("plot_circular/bacteria/never_unique_", method_name, ".pdf"), 
            unique_result$plots[[i]], 
            width = 12, height = 10, dpi = 600, 
            device = cairo_pdf, bg = "white", limitsize = FALSE)
