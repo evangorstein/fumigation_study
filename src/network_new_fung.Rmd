@@ -843,6 +843,140 @@ formula_both = as.formula(formula_both)
 ```
 
 
+```{r}
+# carlasso plot function, from sourcecode of CARlasso package
+
+get_CAR_MB <- function(B, Omega) {
+  D <- diag(diag(Omega))
+  R <- D - Omega
+
+  return(list(
+    M = diag(1 / diag(Omega)),
+    C = t(solve(D, R)), B = t(solve(D, t(B)))
+  ))
+}
+
+custom_plot_carlasso <- function(x, text_size = 15, ...) {
+    dots <- list(...)
+    tol <- dots$tol
+    if(x$settings$link=="logit"){
+        response_name <- x$nodes$response[-length(x$nodes$response)]
+    }
+    else{
+        response_name <- x$nodes$response
+    }
+    if(is.null(tol)) tol = 0.01
+    col_pn <- c("lightblue","pink")
+    # graph structure using threshold:
+    if(is.null(x$horseshoe_binary)){
+        B_binary <- abs(x$point_est$beta) > tol
+        Graph_binary <- abs(x$point_est$Omega) > tol
+    }
+    else {
+        B_binary <- x$horseshoe_binary$B_binary
+        Graph_binary <- x$horseshoe_binary$Omega_binary
+    }
+    diag(Graph_binary) <- 1
+    CAR <- get_CAR_MB(x$point_est$beta*B_binary,
+        Graph_binary*x$point_est$Omega)
+    
+    n_resp <- length(response_name)
+    n_pred <- length(x$nodes$predictors)
+
+    vertices_df <- data.frame(id = c(paste0("resp", 1:n_resp), 
+        paste0("pred", 1:n_pred)),
+        group = c(rep("resp", n_resp),
+        rep("pred", n_pred)))
+
+    ind_mat_resp <- expand.grid(from = 1:n_resp, to = 1:n_resp)
+    ind_mat_resp <- ind_mat_resp[ind_mat_resp$from != ind_mat_resp$to, ]
+    ind_mat_resp$weight <- sapply(1:nrow(ind_mat_resp),
+            function(i, indmat, mat) {
+                mat[indmat$from[i], indmat$to[i]]
+            }
+        ,ind_mat_resp, CAR$C)
+
+    ind_mat_pred <- expand.grid(from = 1:n_pred, to = 1:n_resp)
+    ind_mat_pred$weight <- sapply(1:nrow(ind_mat_pred), 
+            function(i, indmat, mat) {
+                mat[indmat$from[i], indmat$to[i]]
+            }
+        , ind_mat_pred, CAR$B)
+
+    ind_mat_pred$from <- paste0("pred", ind_mat_pred$from)
+    ind_mat_pred$to <- paste0("resp", ind_mat_pred$to)
+    ind_mat_resp$from <- paste0("resp", ind_mat_resp$from)
+    ind_mat_resp$to <- paste0("resp", ind_mat_resp$to)
+
+    edge_df <- rbind(ind_mat_resp, ind_mat_pred)
+    edge_df <- edge_df[edge_df$weight != 0, ]
+
+    edge_abs_df <- edge_df
+    edge_abs_df$weight <- abs(edge_abs_df$weight)
+
+    full_graph <- graph.data.frame(edge_df, vertices_df, directed = T)
+
+
+    col_ER <- c("orange", "darkgreen")
+    shape_ER <- c("square", "circle")
+    type <- c("predictors", "microbe")
+    direction <- c("negative", "positive")
+
+    E(full_graph)$edge.color <- col_pn[(sign(E(full_graph)$weight) + 1) / 2 + 1]
+    E(full_graph)$direction. <- direction[(sign(E(full_graph)$weight) + 1) / 2 + 1]
+    E(full_graph)$abs_weight <- abs(E(full_graph)$weight)
+
+
+    V(full_graph)$name <- c(response_name, x$nodes$predictors)
+
+    V(full_graph)$alpha_centrality <- alpha_centrality(full_graph)
+    V(full_graph)$type <- type[c(rep(2, n_resp), rep(1, n_pred))]
+
+    cbPalette_edge <- c("#0072B2", "#990000")
+    cbPalette_node <- c("#0815d3", "#682d01")
+
+    set_graph_style(plot_margin = margin(10, 10, 10, 10))
+    p <- ggraph(full_graph, layout = "circle") 
+    
+    if(length(unique(E(full_graph)$direction.))==1){
+        p <- p + geom_edge_link(aes(
+            width = abs_weight, alpha = abs_weight), 
+            color = ifelse(E(full_graph)$direction.[1]=="positive",cbPalette_edge[2], cbPalette_edge[1]))
+    }
+    else {
+       p <- p + geom_edge_link(aes(color = direction.,
+            width = abs_weight, alpha = abs_weight)) +
+        scale_edge_color_manual(values = (cbPalette_edge))
+    }
+    
+    p <-  p +
+        geom_node_point(mapping = aes(shape = type,
+                size = alpha_centrality, stroke = 1.5),
+            col = "#000000", fill = "white", alpha = 1) +
+        scale_shape_manual(values = c(21, 24)) +
+        coord_fixed(clip = "off") +
+        guides(
+            width = guide_legend(order = 1),
+            size = guide_legend(order = 2),
+            shape = "none", 
+            edge_color = "none" 
+        )
+
+
+    dd <- rep(0, length(V(full_graph)$name))
+
+    p <- p + geom_node_text(aes(label = name), size = text_size, nudge_x = p$data$x * .38, nudge_y = p$data$y * .2 + dd, family = "") + # repel = T,check_overlap = T)+
+        theme_graph(base_family = "Helvetica") +
+        theme(
+            legend.text = element_text(size = 9),
+            legend.position = "bottom"
+        )
+    p
+}
+
+```
+
+
 Run CARlasso
 
 ```{r}
@@ -854,13 +988,8 @@ response.horse = horseshoe(response)
 ```
 
 ```{r}
-fungi_both_plot = plot(response.horse) + 
-  theme(
-
-    legend.title = element_text(size = 22),    # Legend title size
-    legend.text = element_text(size = 20),     # Legend text size
-    legend.key.size = unit(1.7, 'cm')          
-  )
+fungi_both_plot = custom_plot_carlasso(response.horse, text_size = 4, repel = TRUE)
+fungi_both_plot
 
 ggsave("plot_circular/fungi/fungi_both_plot.pdf", fungi_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
@@ -881,12 +1010,8 @@ response2.horse = horseshoe(response2)
 ```
 
 ```{r}
-fungi_single_plot = plot(response2.horse) + 
-  theme(
-    legend.title = element_text(size = 22),    # Legend title size
-    legend.text = element_text(size = 20),     # Legend text size
-    legend.key.size = unit(1.5, 'cm')          
-  )
+fungi_single_plot = custom_plot_carlasso(response2.horse, text_size = 4, repel = TRUE)
+fungi_single_plot
 
 ggsave("plot_circular/fungi/fungi_single_plot.pdf", fungi_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
@@ -912,12 +1037,7 @@ response10.horse = horseshoe(response10)
 
 ```{r}
 # save plot
-fungi_top10_plot = plot(response10.horse) + 
-  theme(
-    legend.title = element_text(size = 22),    # Legend title size
-    legend.text = element_text(size = 20),     # Legend text size
-    legend.key.size = unit(1.5, 'cm')          
-  )
+fungi_top10_plot = custom_plot_carlasso(response10.horse, text_size = 4, repel = TRUE)
 
 ggsave("plot_circular/fungi/fungi_top10_plot.pdf", fungi_top10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
@@ -939,12 +1059,8 @@ response10_single.horse = horseshoe(response10_single)
 ```
 
 ```{r}
-fungi_top10_single_plot = plot(response10_single.horse) + 
-  theme(
-    legend.title = element_text(size = 22),    # Legend title size
-    legend.text = element_text(size = 20),     # Legend text size
-    legend.key.size = unit(1.5, 'cm')          
-  )
+fungi_top10_single_plot = custom_plot_carlasso(response10_single.horse, text_size = 4, repel = TRUE)
+fungi_top10_single_plot
 
 ggsave("plot_circular/fungi/fungi_top10_single_plot.pdf", fungi_top10_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
