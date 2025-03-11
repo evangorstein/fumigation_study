@@ -745,3 +745,235 @@ for (i in 1:3) {
   }
 }
 ```
+
+
+Now, Identify Different nodes/taxas in 3 network.
+
+```{r}
+# degree and betweenness centrality
+degree.never = degree(never.glasso)
+degree.recent = degree(recent.glasso)
+degree.past = degree(past.glasso)
+
+betweenness.never = betweenness(never.glasso)
+betweenness.recent = betweenness(recent.glasso)
+betweenness.past = betweenness(past.glasso)
+```
+
+```{r}
+# df
+degree_df = data.frame(
+  fumigation = c(rep("never", length(degree.never)), rep("recent", length(degree.recent)), rep("past", length(degree.past))),
+  degree = c(degree.never, degree.recent, degree.past)
+)
+
+betweenness_df = data.frame(
+  fumigation = c(rep("never", length(betweenness.never)), rep("recent", length(betweenness.recent)), rep("past", length(betweenness.past))),
+  betweenness = c(betweenness.never, betweenness.recent, betweenness.past)
+)
+```
+
+Plot the degree and betweenness centrality
+
+```{r}
+# degree
+dg_boxplot = ggplot(degree_df, aes(x = fumigation, y = degree)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Degree Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+dg_boxplot
+
+ggsave("plot_circular/bacteria/dg_boxplot.pdf", dg_boxplot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+```{r}
+# betweenness
+bt_boxplot = ggplot(betweenness_df, aes(x = fumigation, y = betweenness)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(x = "Fumigation Status", y = "Betweenness Distribution", title = "Glasso Network") +
+  theme(
+    plot.title = element_text(size = 25, hjust = 0.5),  # Increase the size of the plot title
+    axis.title.x = element_text(size = 20, margin = margin(t = 15)),  # Increase the size of the x-axis title
+    axis.title.y = element_text(size = 30, margin = margin(r = 15)),  # Increase the size of the y-axis title
+    axis.text.x = element_text(size = 25),  # Increase the size of the x-axis labels
+    axis.text.y = element_text(size = 25)   # Increase the size of the y-axis labels
+  )
+
+bt_boxplot
+
+ggsave("plot_circular/bacteria/bt_boxplot.pdf", bt_boxplot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+Let's find the 20 most different one
+
+```{r}
+# degree
+degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
+betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
+
+difference_df = data.frame(
+  names = names(degree_difference),
+  degree_difference = degree_difference,
+  betweeness_difference = betweeness_difference
+)
+
+
+difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
+
+difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
+
+top_20 = difference_df[1:20,]
+
+top_20$names
+```
+
+Here is the names of the top 20 different nodes.
+
+Now, we fit carlasso model to 20 taxas.
+
+```{r}
+never_fumigated = samp_metadata %>% 
+  filter(fumigation == "never") %>%
+  pull(sample_name)
+
+recent_fumigated = samp_metadata %>%
+  filter(fumigation == "recent") %>%
+  pull(sample_name)
+
+past_fumigated = samp_metadata %>%
+  filter(fumigation == "past") %>%
+  pull(sample_name)
+
+fam_df = as.data.frame(fam.mat)
+fam_df = fam_df %>%
+  mutate(sample_name = rownames(fam_df)) %>%
+  mutate(fumigation_status = case_when(
+    sample_name %in% never_fumigated ~ "never",
+    sample_name %in% recent_fumigated ~ "recent",
+    sample_name %in% past_fumigated ~ "past"
+  ))
+fam_df$Treatment = samp_metadata$Treatment
+
+otus = top_20$names
+otu_quoted = paste0("`", otus, "`")
+formula = paste(otu_quoted, collapse = "+")
+formula_both = paste(formula, "~ fumigation_status+Treatment")
+formula_both = as.formula(formula_both)
+```
+
+
+Run CARlasso
+
+```{r}
+response = CARlasso(formula_both, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response.horse = horseshoe(response)
+```
+
+```{r}
+bact_both_plot = plot(response.horse) + 
+  theme(
+
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.7, 'cm')          
+  )
+
+ggsave("plot_circular/bacteria/bact_both_plot.pdf", bact_both_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+Single response
+
+```{r}
+formula_single = paste(formula, "~ fumigation_status")
+formula_single = as.formula(formula_single)
+```
+
+```{r}
+response2 = CARlasso(formula_single, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response2.horse = horseshoe(response2)
+```
+
+```{r}
+bact_single_plot = plot(response2.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.5, 'cm')          
+  )
+
+ggsave("plot_circular/bacteria/bact_single_plot.pdf", bact_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+CARlasso on top 10 most different taxa.
+
+```{r}
+top10 = difference_df[1:10,]
+otus10 = top10$names
+otu_quoted10 = paste0("`", otus10, "`")
+formula10 = paste(otu_quoted10, collapse = "+")
+formula_both10 = paste(formula10, "~ fumigation_status+Treatment")
+formula_both10 = as.formula(formula_both10)
+```
+
+```{r}
+response10 = CARlasso(formula_both10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response10.horse = horseshoe(response10)
+```
+
+```{r}
+# save plot
+bact_top10_plot = plot(response10.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.5, 'cm')          
+  )
+
+ggsave("plot_circular/bacteria/bact_top10_plot.pdf", bact_top10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
+
+
+Single response on top 10 most different taxa.
+
+```{r}
+formula_single10 = paste(formula10, "~ fumigation_status")
+formula_single10 = as.formula(formula_single10)
+```
+
+```{r}
+response10_single = CARlasso(formula_single10, data = fam_df, link = "logit", adaptive = TRUE)
+```
+
+```{r}
+response10_single.horse = horseshoe(response10_single)
+```
+
+```{r}
+bact_top10_single_plot = plot(response10_single.horse) + 
+  theme(
+    legend.title = element_text(size = 22),    # Legend title size
+    legend.text = element_text(size = 20),     # Legend text size
+    legend.key.size = unit(1.5, 'cm')          
+  )
+
+ggsave("plot_circular/bacteria/bact_top10_single_plot.pdf", bact_top10_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+```
