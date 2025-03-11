@@ -396,7 +396,7 @@ grid.draw(venn_plot)
 options(repr.plot.res = 1200)    # Set global resolution to 1200 DPI
 par(mar = c(5, 4, 4, 2) + 0.1)  # Adjust margins for high-res output
 
-cairo_pdf(here("plot_circular", "venn_plot.pdf"), 
+cairo_pdf(here("plot_circular", "bacteria", "venn_plot.pdf"), 
     width = 12, 
     height = 15,
     family = "ArialMT",
@@ -458,8 +458,8 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   # filter out edges with weight less than edge_threshold
   #common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
 
-  base_colors = pal_npg("nrc")(10)
-  phylum_colors = colorRampPalette(base_colors)(10)
+  phylum_colors = pal_npg("nrc")(10)
+  #phylum_colors = colorRampPalette(base_colors)(10)
 
 
   #Assign edge colors by blending both connected node colors
@@ -642,11 +642,13 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     # Store the graph
     unique_networks[[i]] = unique_graph
 
-    base_colors = pal_npg("nrc")(10)
-    # calculate the number of unique phylums
     unique_phylums_num = length(unique(V(unique_graph)$phylum))
-    phylum_colors = colorRampPalette(base_colors)(unique_phylums_num)
-
+    if (unique_phylums_num > 10) {
+      base_colors = pal_npg("nrc")(10)
+      phylum_colors = colorRampPalette(base_colors)(unique_phylums_num)
+    } else {
+      phylum_colors = pal_npg("nrc")(unique_phylums_num)
+    }
     # Assign edge colors by blending node phylum colors
     E(unique_graph)$edge_color = sapply(1:ecount(unique_graph), function(k) {
       edge_ends = ends(unique_graph, k, names = TRUE)
