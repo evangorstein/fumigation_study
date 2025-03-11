@@ -32,6 +32,8 @@ library(ggplot2)
 library(CARlasso)
 library(viridis)
 library(VennDiagram)
+library(ggsci)
+library(RColorBrewer)
 ```
 
 Read in the data
@@ -198,9 +200,12 @@ Here is the function to create a plot.
 
 ```{r}
 # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
-plot_circular_network = function(net, title, phylum_mapping,filter, node_size = 3, edge_threshold = 0.07){
+plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 3, edge_threshold = 0.07){
   # filter out edges
     net_filtered = delete_edges(net, which(E(net)$weight <= edge_threshold))
+    
+    base_colors = pal_npg("nrc")(10)
+    phylum_colors = colorRampPalette(base_colors)(27)  # Repeat for 27 phyla
 
     # add phylum information to nodes
     V(net_filtered)$phylum = phylum_mapping[V(net_filtered)$name]
@@ -208,11 +213,12 @@ plot_circular_network = function(net, title, phylum_mapping,filter, node_size = 
 
     network = ggraph(net_filtered, layout = "circle") +
     geom_edge_link0(aes(width = weight), color = "grey66") +
-    geom_node_point(aes(fill = phylum), shape = 21, size = node_size) +
-    geom_node_text(aes(filter = size > filter, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
-    scale_edge_width(range = c(0.2, 3)) +
-    scale_size(range = c(1, 6)) +
-    scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
+    geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
+    geom_node_text(aes(filter = size > degree_filter, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
+    scale_edge_width(range = c(0.5, 2.5)) +
+    #scale_size(range = c(1, 6)) +
+    #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
+    scale_fill_manual(values = phylum_colors, name = "Phylum") +
     theme_void() +
     theme(
       legend.position = "right",
@@ -426,7 +432,7 @@ Now, unique edges in each network.
 
 ```{r}
 # Optimized function to create and plot networks with edges unique to each method
-plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 3, edge_threshold = 0.07) {
+plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10, edge_threshold = 0.07) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
   edges2 = get.edgelist(net2)
