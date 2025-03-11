@@ -492,7 +492,7 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   network_plot = ggraph(common_graph, layout = "circle") +
     geom_edge_link0(aes(color = edge_color)) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-    geom_node_text(aes(label = name, size = 10), 
+    geom_node_text(aes(label = name, size = 5, x = 1.1*x, y = 1.1*y, repel = TRUE), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
     #scale_size(range = c(2, 5)) +
     #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
@@ -641,23 +641,72 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     
     # Store the graph
     unique_networks[[i]] = unique_graph
+
+    base_colors = pal_npg("nrc")(10)
+    # calculate the number of unique phylums
+    unique_phylums_num = length(unique(V(unique_graph)$phylum))
+    phylum_colors = colorRampPalette(base_colors)(unique_phylums_num)
+
+    # Assign edge colors by blending node phylum colors
+    E(unique_graph)$edge_color = sapply(1:ecount(unique_graph), function(k) {
+      edge_ends = ends(unique_graph, k, names = TRUE)
+      
+      node1_phylum = V(unique_graph)$phylum[match(edge_ends[1], V(unique_graph)$name)]
+      node2_phylum = V(unique_graph)$phylum[match(edge_ends[2], V(unique_graph)$name)]
+      
+      # Handle missing values
+      if (is.na(node1_phylum)) node1_phylum = "Unknown_Phylum"
+      if (is.na(node2_phylum)) node2_phylum = "Unknown_Phylum"
+      
+      # Get phylum color indices
+      index1 = match(node1_phylum, unique(V(unique_graph)$phylum))
+      index2 = match(node2_phylum, unique(V(unique_graph)$phylum))
+      
+      # Handle missing indices
+      if (is.na(index1)) index1 = 1
+      if (is.na(index2)) index2 = 1
+      
+      # Get colors of both nodes
+      color1 = col2rgb(phylum_colors[index1])
+      color2 = col2rgb(phylum_colors[index2])
+      
+      # Compute average color
+      avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
+                      (color1[2] + color2[2]) / 2 / 255, 
+                      (color1[3] + color2[3]) / 2 / 255)
+      
+      return(avg_color)
+    })
+
+    E(unique_graph)$edge_alpha = scales::rescale(E(unique_graph)$weight, to = c(0.3, 0.8))
     
     # Create the plot
     network_plot = ggraph(unique_graph, layout = "circle") +
-      geom_edge_link0(aes(width = weight), color = method_colors[i]) +
+      geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
       scale_edge_width(range = c(0.2, 3)) +
-      geom_node_point(aes(fill = phylum), shape = 21, size = node_size) +
-      geom_node_text(aes(label = name, size = 5), 
+      scale_edge_alpha(range = c(0.3, 0.8)) +
+      scale_edge_color_identity() +
+      geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
+      geom_node_text(aes(label = name, size = 4, x = 1.1*x, y = 1.1*y, repel = TRUE), 
                     family = "serif", repel = TRUE, show.legend = FALSE) +
-      scale_size(range = c(2, 5)) +
-      scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
+      #scale_size(range = c(2, 5)) +
+      scale_fill_manual(values = phylum_colors, name = "Phylum") +
+      labs(edge_alpha = "Edge Transparency", 
+           width = "Edge Weight",
+           fill = "Phylum") +  
+      guides(
+        edge_alpha = guide_legend(title = "Edge Transparency"),
+        edge_width = guide_legend(title = "Weight"),
+        fill = guide_legend(title = "Phylum")
+      ) +
       theme_graph() +
-      ggtitle(paste0("Edges Unique to ", method_names[i], " Method")) +
+      ggtitle(paste0("Edges Unique to ", method_names[i])) +
       theme(
         plot.title = element_text(size = 16, hjust = 0.5),
         legend.position = "right",
-        legend.title = element_text(size = 12),
-        legend.text = element_text(size = 10)
+        legend.title = element_text(size = 12, face = "bold", family = "Times"),
+        legend.text = element_text(size = 10, family = "Times"),
+        plot.background = element_rect(fill = "white", color = NA)
       )
     
     plots[[i]] = network_plot
