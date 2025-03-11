@@ -211,11 +211,22 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
     V(net_filtered)$phylum = phylum_mapping[V(net_filtered)$name]
     V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] = "Unknown_Phylum"
 
+    E(net_filtered)$edge_color = sapply(1:ecount(net_filtered), function(i) {
+    edge_ends = ends(net_filtered, i)
+    node1_phylum = V(net_filtered)$phylum[edge_ends[1]]
+    phylum_index = match(node1_phylum, unique(V(net_filtered)$phylum))
+    if(is.na(phylum_index)) phylum_index = 1
+    return(scales::muted(phylum_colors[phylum_index]))
+  })
+    E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$weight, to = c(0.3, 0.8))
+
     network = ggraph(net_filtered, layout = "circle") +
-    geom_edge_link0(aes(width = weight), color = "grey66") +
+    geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
     geom_node_text(aes(filter = size > degree_filter, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
     scale_edge_width(range = c(0.5, 2.5)) +
+    scale_edge_alpha(range = c(0.3, 0.8)) +
+    scale_edge_color_identity() +
     #scale_size(range = c(1, 6)) +
     #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
     scale_fill_manual(values = phylum_colors, name = "Phylum") +
