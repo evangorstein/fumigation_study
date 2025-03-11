@@ -213,8 +213,8 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
 
     E(net_filtered)$edge_color = sapply(1:ecount(net_filtered), function(i) {
     edge_ends = ends(net_filtered, i)
-    node1_phylum = V(net_filtered)$phylum[edge_ends[1]]
-    node2_phylum = V(net_filtered)$phylum[edge_ends[2]]
+    node1_phylum = V(net_filtered)$phylum[match(edge_ends[1], V(net_filtered)$name)]
+    node2_phylum = V(net_filtered)$phylum[match(edge_ends[2], V(net_filtered)$name)]
     
     # Get phylum color indices
     index1 = match(node1_phylum, unique(V(net_filtered)$phylum))
@@ -247,11 +247,20 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
     #scale_size(range = c(1, 6)) +
     #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
     scale_fill_manual(values = phylum_colors, name = "Phylum") +
+    labs(edge_alpha = "Edge Transparency", 
+             width = "Edge Weight",
+             fill = "Phylum") +  # Renames legend titles properly
+        guides(
+            edge_alpha = guide_legend(title = "Edge Alpha"),
+            edge_width = guide_legend(title = "Weight"),
+            fill = guide_legend(title = "Phylum")
+        ) +
     theme_void() +
     theme(
       legend.position = "right",
       plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
-
+      legend.text = element_text(size = 10, family = "Times New Roman"),
+      legend.title = element_text(size = 12, family = "Times New Roman", face = "bold")
     )
     return(network)
 }
@@ -401,7 +410,7 @@ Draw the network for edges in all 3 networks
 
 ```{r}
 # Function to create and plot a network with edges common to all three networks
-plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, node_size = 3, edge_threshold = 0.07) {
+plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, node_size = 10, edge_threshold = 0.07) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
   edges2 = get.edgelist(net2)
@@ -447,25 +456,67 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   V(common_graph)$degree = degree(common_graph)
 
   # filter out edges with weight less than edge_threshold
-  common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
-  
+  #common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
+
+  base_colors = pal_npg("nrc")(10)
+  phylum_colors = colorRampPalette(base_colors)(10)
+
+
+  #Assign edge colors by blending both connected node colors
+  E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
+    edge_ends = ends(common_graph, i)
+    node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
+    node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
+
+    # Get phylum color indices
+    index1 = match(node1_phylum, unique(V(common_graph)$phylum))
+    index2 = match(node2_phylum, unique(V(common_graph)$phylum))
+
+    # Handle missing indices
+    if (is.na(index1)) index1 = 1
+    if (is.na(index2)) index2 = 1
+
+    # Get colors for both nodes
+    color1 = col2rgb(phylum_colors[index1])
+    color2 = col2rgb(phylum_colors[index2])
+    
+    # Compute blended color
+    avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
+                    (color1[2] + color2[2]) / 2 / 255, 
+                    (color1[3] + color2[3]) / 2 / 255)
+    
+    return(avg_color)
+  })
+  #E(common_graph)$edge_alpha = scales::rescale(E(common_graph)$weight, to = c(0.3, 0.8))
   # Create the plot
   network_plot = ggraph(common_graph, layout = "circle") +
-    geom_edge_link0(color = "#7BC8F6", width = 0.8) +
-    geom_node_point(aes(fill = phylum), shape = 21, size = node_size) +
-    geom_node_text(aes(label = name, size = ifelse(degree > 2, degree, 2)), 
+    geom_edge_link0(aes(color = edge_color)) +
+    geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
+    geom_node_text(aes(label = name, size = 10), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
-    scale_size(range = c(2, 5)) +
-    scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
+    #scale_size(range = c(2, 5)) +
+    #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
+    scale_edge_width(range = c(0.5, 2.5)) +
+    #scale_edge_alpha(range = c(0.3, 0.8)) +
+    scale_edge_color_identity() +
+    scale_fill_manual(values = phylum_colors, name = "Phylum") +
+    labs(edge_alpha = "Edge Transparency", 
+             width = "Edge Weight",
+             fill = "Phylum") +  # Renames legend titles properly
+    guides(
+        edge_alpha = guide_legend(title = "Edge Alpha"),
+        edge_width = guide_legend(title = "Weight"),
+        fill = guide_legend(title = "Phylum")
+    ) +
     theme_graph() +
     ggtitle(title) +
     theme(
-      plot.title = element_text(size = 16, hjust = 0.5),
+      plot.title = element_text(size = 18, face = "bold", family = "Times", hjust = 0.5),
       legend.position = "right",
-      legend.title = element_text(size = 12),
-      legend.text = element_text(size = 10)
+      legend.title = element_text(size = 12, face = "bold"),
+      legend.text = element_text(size = 10),
+      plot.background = element_rect(fill = "white", color = NA)
     )
-  
   return(list(plot = network_plot, graph = common_graph))
 }
 ```
