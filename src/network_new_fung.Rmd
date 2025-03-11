@@ -808,6 +808,28 @@ bt_boxplot
 ggsave("plot_circular/fungi/bt_boxplot.pdf", bt_boxplot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
+Let's find the 20 most different one
+
+```{r}
+# degree
+degree_difference = abs(degree.never - degree.recent) + abs(degree.never - degree.past) + abs(degree.recent - degree.past)
+betweeness_difference = abs(betweenness.never - betweenness.recent) + abs(betweenness.never - betweenness.past) + abs(betweenness.recent - betweenness.past)
+
+difference_df = data.frame(
+  names = names(degree_difference),
+  degree_difference = degree_difference,
+  betweeness_difference = betweeness_difference
+)
+
+
+difference_df$score = difference_df$degree_difference + difference_df$betweeness_difference
+
+difference_df = difference_df[order(difference_df$score, decreasing = TRUE),]
+
+top_20 = difference_df[1:20,]
+
+top_20$names
+```
 Here is the names of the top 20 different nodes.
 
 Now, we fit carlasso model to 20 taxas.
