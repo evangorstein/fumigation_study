@@ -209,7 +209,105 @@ Plot the network for Glasso method
 Here is the function to create a plot.
 
 ```{r}
-# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
+# # Helper function to compute a "clock" layout
+# custom_clock_layout <- function(net, group_attr = "phylum", radius = 1, start_angle = 0) {
+#   # Extract vertex data from the graph
+#   v_df <- as_data_frame(net, what = "vertices")
+#   v_names <- v_df$name
+  
+#   # Get unique groups (phylum) in sorted order; you can change this order if needed
+#   groups <- sort(unique(v_df[[group_attr]]))
+#   n_groups <- length(groups)
+  
+#   # Initialize a matrix to store coordinates for each vertex
+#   coords <- matrix(NA, nrow = vcount(net), ncol = 2)
+  
+#   # For each group, assign an arc (clock segment)
+#   for (i in seq_along(groups)) {
+#     group <- groups[i]
+#     # Find indices of vertices in this group
+#     indices <- which(v_df[[group_attr]] == group)
+#     k <- length(indices)
+    
+#     # Define the segment boundaries (in radians)
+#     seg_start <- start_angle + (i - 1) * (2 * pi / n_groups)
+#     seg_end   <- start_angle + i * (2 * pi / n_groups)
+    
+#     # Evenly distribute nodes along the arc
+#     angles <- if (k == 1) {
+#       (seg_start + seg_end) / 2
+#     } else {
+#       seq(seg_start, seg_end, length.out = k + 2)[-c(1, k + 2)]
+#     }
+    
+#     # Assign coordinates using polar-to-cartesian conversion
+#     coords[indices, 1] <- radius * cos(angles)
+#     coords[indices, 2] <- radius * sin(angles)
+#   }
+  
+#   # Create a layout data frame with computed coordinates and vertex names
+#   layout_df <- data.frame(name = v_names, x = coords[, 1], y = coords[, 2])
+#   # Merge the computed coordinates with the vertex attributes
+#   layout_df <- merge(layout_df, v_df, by = "name", sort = FALSE)
+  
+#   return(layout_df)
+# }
+
+# # Modified plotting function using the custom clock layout
+# plot_circular_network <- function(net, title, phylum_mapping, degree_filter, 
+#                                   node_size = 3, edge_threshold = 0.07, radius = 1) {
+#   # Remove weak edges based on the provided threshold
+#   net_filtered <- delete_edges(net, which(E(net)$abs_weight <= edge_threshold))
+  
+#   # Ensure that each vertex has a 'size' attribute (here using degree)
+#   V(net_filtered)$size <- degree(net_filtered)
+  
+#   # Set up colors for up to 27 phyla
+#   base_colors <- pal_npg("nrc")(10)
+#   phylum_colors <- colorRampPalette(base_colors)(27)
+  
+#   # Add phylum information to each vertex (using your mapping)
+#   V(net_filtered)$phylum <- phylum_mapping[V(net_filtered)$name]
+#   V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] <- "Unknown_Phylum"
+  
+#   # Compute the manual "clock" layout (each phylum gets its clock segment)
+#   layout_df <- custom_clock_layout(net_filtered, group_attr = "phylum", radius = radius)
+  
+#   # Set edge color based on the sign of the weight and scale alpha by absolute weight
+#   E(net_filtered)$edge_color <- ifelse(E(net_filtered)$weight >= 0, "#D73027", "#4575B4")
+#   E(net_filtered)$edge_alpha <- scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
+  
+#   # Build the plot using the manual layout
+#   network <- ggraph(net_filtered, layout = "manual", node.positions = layout_df) +
+#     geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
+#     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
+#     geom_node_text(aes(filter = size > degree_filter, label = name), 
+#                    family = "serif", repel = TRUE, show.legend = FALSE) +
+#     scale_edge_width(range = c(0.5, 2.5)) +
+#     scale_edge_alpha(range = c(0.3, 0.8)) +
+#     scale_edge_color_identity() +
+#     scale_fill_manual(values = phylum_colors, name = "Phylum") +
+#     labs(fill = "Phylum", title = title) +
+#     guides(
+#       edge_alpha = "none",
+#       edge_width = "none",
+#       fill = guide_legend(title = "Phylum")
+#     ) +
+#     theme_void() +
+#     theme(
+#       legend.position = "right",
+#       plot.background = element_rect(fill = "white", color = NA),
+#       legend.text = element_text(size = 10, family = "Times New Roman"),
+#       legend.title = element_text(size = 12, family = "Times New Roman", face = "bold"),
+#       plot.title = element_text(hjust = 0.5)
+#     )
+  
+#   return(network)
+# }
+```
+
+```{r}
+# # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
 plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 3, edge_threshold = 0.07){
   # filter out edges
     net_filtered = delete_edges(net, which(E(net)$abs_weight <= edge_threshold))
@@ -220,12 +318,18 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
     V(net_filtered)$phylum = phylum_mapping[V(net_filtered)$name]
     V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] = "Unknown_Phylum"
 
+    # order nodes by phylum
+    V(net_filtered)$phylum = factor(V(net_filtered)$phylum, levels = sort(unique(V(net_filtered)$phylum)))
+    net_filtered = permute(net_filtered, order(V(net_filtered)$phylum))
+
     # add edge color
     E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#D73027", "#4575B4") 
     # assign edge alpha
     E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
 
-    network = ggraph(net_filtered, layout = "circle") +
+    layout_data = create_layout(net_filtered, layout = "circle")
+
+    network = ggraph(layout_data) +
     geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
     geom_node_text(aes(filter = size > degree_filter, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
@@ -387,8 +491,8 @@ create_triple_venn = function(net1, net2, net3, names) {
     fill = c("#1B9E77", "#D95F02", "#7570B3"),
     alpha = 0.5,
     lty = "solid",
-    cex = 1.5,
-    cat.cex = 1.2,
+    cex = 3.5,
+    cat.cex = 2.4,
     cat.dist = 0.05,
     cat.pos = c(0, 0, 180)
   )
@@ -474,35 +578,35 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   #phylum_colors = colorRampPalette(base_colors)(10)
 
 
-  #Assign edge colors by blending both connected node colors
-  E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
-    edge_ends = ends(common_graph, i)
-    node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
-    node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
+  # #Assign edge colors by blending both connected node colors
+  # E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
+  #   edge_ends = ends(common_graph, i)
+  #   node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
+  #   node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
 
-    # Get phylum color indices
-    index1 = match(node1_phylum, unique(V(common_graph)$phylum))
-    index2 = match(node2_phylum, unique(V(common_graph)$phylum))
+  #   # Get phylum color indices
+  #   index1 = match(node1_phylum, unique(V(common_graph)$phylum))
+  #   index2 = match(node2_phylum, unique(V(common_graph)$phylum))
 
-    # Handle missing indices
-    if (is.na(index1)) index1 = 1
-    if (is.na(index2)) index2 = 1
+  #   # Handle missing indices
+  #   if (is.na(index1)) index1 = 1
+  #   if (is.na(index2)) index2 = 1
 
-    # Get colors for both nodes
-    color1 = col2rgb(phylum_colors[index1])
-    color2 = col2rgb(phylum_colors[index2])
+  #   # Get colors for both nodes
+  #   color1 = col2rgb(phylum_colors[index1])
+  #   color2 = col2rgb(phylum_colors[index2])
     
-    # Compute blended color
-    avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-                    (color1[2] + color2[2]) / 2 / 255, 
-                    (color1[3] + color2[3]) / 2 / 255)
+  #   # Compute blended color
+  #   avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
+  #                   (color1[2] + color2[2]) / 2 / 255, 
+  #                   (color1[3] + color2[3]) / 2 / 255)
     
-    return(avg_color)
-  })
+  #   return(avg_color)
+  # })
   #E(common_graph)$edge_alpha = scales::rescale(E(common_graph)$weight, to = c(0.3, 0.8))
   # Create the plot
   network_plot = ggraph(common_graph, layout = "circle") +
-    geom_edge_link0(aes(color = edge_color)) +
+    geom_edge_link0(aes(color = "#FDAE61")) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
     geom_node_text(aes(label = name, size = 5, x = 1.1*x, y = 1.1*y, repel = TRUE), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
@@ -512,12 +616,11 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
     #scale_edge_alpha(range = c(0.3, 0.8)) +
     scale_edge_color_identity() +
     scale_fill_manual(values = phylum_colors, name = "Phylum") +
-    labs(edge_alpha = "Edge Transparency", 
-             width = "Edge Weight",
-             fill = "Phylum") +  # Renames legend titles properly
+    labs(
+        fill = "Phylum") +  # Renames legend titles properly
     guides(
-        edge_alpha = guide_legend(title = "Edge Alpha"),
-        edge_width = guide_legend(title = "Weight"),
+        edge_alpha = "none",
+        edge_width = "none",
         fill = guide_legend(title = "Phylum")
     ) +
     theme_graph() +
@@ -537,7 +640,7 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
 #Now use the function for each fumigation condition
 never_common_result = plot_common_edges_network(
   never.glasso, recent.glasso, past.glasso,
-  "Common Edges Across All Three Glasso Networks",
+  "Subnetwork Shared Among All Three Fumigation Status",
   phylum_mapping
 )
 
@@ -556,7 +659,7 @@ Now, unique edges in each network.
 
 ```{r}
 # Optimized function to create and plot networks with edges unique to each method
-plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10, edge_threshold = 0.07) {
+plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
   edges2 = get.edgelist(net2)
@@ -581,6 +684,11 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
   edges1_df$weight = E(net1)$weight
   edges2_df$weight = E(net2)$weight
   edges3_df$weight = E(net3)$weight
+
+  # add absolute weight
+  edges1_df$abs_weight = abs(edges1_df$weight)
+  edges2_df$abs_weight = abs(edges2_df$weight)
+  edges3_df$abs_weight = abs(edges3_df$weight)
   
   # Find edges unique to each network
   unique_edges1 = setdiff(edges1_df$edge_id, union(edges2_df$edge_id, edges3_df$edge_id))
@@ -619,7 +727,9 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     unique_edges_df = edges_df[edges_df$edge_id %in% unique_edges, ]
     
     # Filter by weight threshold
-    unique_edges_df = unique_edges_df[unique_edges_df$weight > edge_threshold, ]
+    # dynamic edge threshold
+    edge_threshold = quantile(unique_edges_df$abs_weight, 0.9)
+    unique_edges_df = unique_edges_df[unique_edges_df$abs_weight > edge_threshold, ]
     
     # Skip if no edges after filtering
     if (nrow(unique_edges_df) == 0) {
@@ -661,37 +771,9 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     } else {
       phylum_colors = pal_npg("nrc")(unique_phylums_num)
     }
-    # Assign edge colors by blending node phylum colors
-    E(unique_graph)$edge_color = sapply(1:ecount(unique_graph), function(k) {
-      edge_ends = ends(unique_graph, k, names = TRUE)
-      
-      node1_phylum = V(unique_graph)$phylum[match(edge_ends[1], V(unique_graph)$name)]
-      node2_phylum = V(unique_graph)$phylum[match(edge_ends[2], V(unique_graph)$name)]
-      
-      # Handle missing values
-      if (is.na(node1_phylum)) node1_phylum = "Unknown_Phylum"
-      if (is.na(node2_phylum)) node2_phylum = "Unknown_Phylum"
-      
-      # Get phylum color indices
-      index1 = match(node1_phylum, unique(V(unique_graph)$phylum))
-      index2 = match(node2_phylum, unique(V(unique_graph)$phylum))
-      
-      # Handle missing indices
-      if (is.na(index1)) index1 = 1
-      if (is.na(index2)) index2 = 1
-      
-      # Get colors of both nodes
-      color1 = col2rgb(phylum_colors[index1])
-      color2 = col2rgb(phylum_colors[index2])
-      
-      # Compute average color
-      avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-                      (color1[2] + color2[2]) / 2 / 255, 
-                      (color1[3] + color2[3]) / 2 / 255)
-      
-      return(avg_color)
-    })
-
+    # Assign edge colors
+    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#D73027", "#4575B4")
+   
     E(unique_graph)$edge_alpha = scales::rescale(E(unique_graph)$weight, to = c(0.3, 0.8))
     
     # Create the plot
@@ -705,16 +787,15 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
                     family = "serif", repel = TRUE, show.legend = FALSE) +
       #scale_size(range = c(2, 5)) +
       scale_fill_manual(values = phylum_colors, name = "Phylum") +
-      labs(edge_alpha = "Edge Transparency", 
-           width = "Edge Weight",
+      labs(
            fill = "Phylum") +  
       guides(
-        edge_alpha = guide_legend(title = "Edge Transparency"),
-        edge_width = guide_legend(title = "Weight"),
+        edge_alpha = "none",
+        edge_width = "none",
         fill = guide_legend(title = "Phylum")
       ) +
       theme_graph() +
-      ggtitle(paste0("Edges Unique to ", method_names[i])) +
+      ggtitle(paste0("Subnetwork Specific to ", method_names[i], " Fumigation Status")) +
       theme(
         plot.title = element_text(size = 16, hjust = 0.5),
         legend.position = "right",
@@ -739,7 +820,7 @@ Plot the unique networks
 unique_result = plot_unique_edges_network(
   never.glasso, recent.glasso, past.glasso,
   c("Never", "Recent", "Past"),
-  "Edges Unique to Each Fumigation Condition",
+  "Subnetwork Specific to Each Fumigation Status",
   phylum_mapping
 )
 ```
