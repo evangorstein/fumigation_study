@@ -160,25 +160,36 @@ past.mat = create_matrix(genus.mat.past)
 never.glasso = glasso_net(never.mat, 0.75)
 recent.glasso = glasso_net(recent.mat, 0.75)
 past.glasso = glasso_net(past.mat, 0.75)
+```
+
+
+```{r}
 
 # convert glasso weight to positive
-E(never.glasso)$weight = E(never.glasso)$weight - (min(E(never.glasso)$weight)) + 0.0001
-E(recent.glasso)$weight = E(recent.glasso)$weight - (min(E(recent.glasso)$weight)) + 0.0001
-E(past.glasso)$weight = E(past.glasso)$weight - (min(E(past.glasso)$weight)) + 0.0001
+E(never.glasso)$positive_weight = E(never.glasso)$weight - (min(E(never.glasso)$weight)) + 0.0001
+E(recent.glasso)$positive_weight = E(recent.glasso)$weight - (min(E(recent.glasso)$weight)) + 0.0001
+E(past.glasso)$positive_weight = E(past.glasso)$weight - (min(E(past.glasso)$weight)) + 0.0001
 
-# compute clustering
-V(never.glasso)$clu = as.character(membership(cluster_louvain(never.glasso)))
-V(recent.glasso)$clu = as.character(membership(cluster_louvain(recent.glasso)))
-V(past.glasso)$clu = as.character(membership(cluster_louvain(past.glasso)))
+# absolute weight
+E(never.glasso)$abs_weight = abs(E(never.glasso)$weight)
+E(recent.glasso)$abs_weight = abs(E(recent.glasso)$weight)
+E(past.glasso)$abs_weight = abs(E(past.glasso)$weight)
+```
+
+```{r}
+# # compute clustering
+# V(never.glasso)$clu = as.character(membership(cluster_louvain(never.glasso)))
+# V(recent.glasso)$clu = as.character(membership(cluster_louvain(recent.glasso)))
+# V(past.glasso)$clu = as.character(membership(cluster_louvain(past.glasso)))
 
 # compute node size based on degree
 V(never.glasso)$size = degree(never.glasso)
 V(recent.glasso)$size = degree(recent.glasso)
 V(past.glasso)$size = degree(past.glasso)
 
-V(never.glasso)$clu[V(never.glasso)$degree == 0] = "999"
-V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
-V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
+# V(never.glasso)$clu[V(never.glasso)$degree == 0] = "999"
+# V(recent.glasso)$clu[V(recent.glasso)$degree == 0] = "999"
+# V(past.glasso)$clu[V(past.glasso)$degree == 0] = "999"
 ```
 
 ```{r}
@@ -198,60 +209,42 @@ Plot the network for Glasso method
 Here is the function to create a plot.
 
 ```{r}
-# net: net object, title: title of plot, filter: filter out nodes with degree less than filter
-plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 2, edge_threshold = 0.07){
+# # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
+plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 3, edge_threshold = 0.07){
   # filter out edges
-    net_filtered = delete_edges(net, which(E(net)$weight <= edge_threshold))
-    
-    phylum_colors = pal_npg("nrc")(8)
-   # phylum_colors = colorRampPalette(base_colors)(27)  # Repeat for 27 phyla
+    net_filtered = delete_edges(net, which(E(net)$abs_weight <= edge_threshold))
+    base_colors = pal_npg("nrc")(10)
+    phylum_colors = colorRampPalette(base_colors)(27)  # Repeat for 27 phyla
 
     # add phylum information to nodes
     V(net_filtered)$phylum = phylum_mapping[V(net_filtered)$name]
     V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] = "Unknown_Phylum"
 
-    E(net_filtered)$edge_color = sapply(1:ecount(net_filtered), function(i) {
-    edge_ends = ends(net_filtered, i)
-    node1_phylum = V(net_filtered)$phylum[match(edge_ends[1], V(net_filtered)$name)]
-    node2_phylum = V(net_filtered)$phylum[match(edge_ends[2], V(net_filtered)$name)]
-    
-    # Get phylum color indices
-    index1 = match(node1_phylum, unique(V(net_filtered)$phylum))
-    index2 = match(node2_phylum, unique(V(net_filtered)$phylum))
-    
-    # Handle missing values
-    if(is.na(index1)) index1 = 1
-    if(is.na(index2)) index2 = 1
-    
-    # Get colors of both nodes
-    color1 = col2rgb(phylum_colors[index1])
-    color2 = col2rgb(phylum_colors[index2])
-    
-    # Compute average color
-    avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-                    (color1[2] + color2[2]) / 2 / 255, 
-                    (color1[3] + color2[3]) / 2 / 255)
-    
-    return(avg_color)
-    })
-    E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$weight, to = c(0.3, 0.8))
+    # order nodes by phylum
+    V(net_filtered)$phylum = factor(V(net_filtered)$phylum, levels = sort(unique(V(net_filtered)$phylum)))
+    net_filtered = permute(net_filtered, order(V(net_filtered)$phylum))
 
-    network = ggraph(net_filtered, layout = "circle") +
+    # add edge color
+    E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#D73027", "#4575B4") 
+    # assign edge alpha
+    E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
+
+    layout_data = create_layout(net_filtered, layout = "circle")
+
+    network = ggraph(layout_data) +
     geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-    geom_node_text(aes(filter = size > 999, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
+    geom_node_text(aes(filter = size > degree_filter, label = name, size = 3), family = "serif", repel = TRUE, show.legend = FALSE) +
     scale_edge_width(range = c(0.5, 2.5)) +
     scale_edge_alpha(range = c(0.3, 0.8)) +
     scale_edge_color_identity() +
     #scale_size(range = c(1, 6)) +
     #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
     scale_fill_manual(values = phylum_colors, name = "Phylum") +
-    labs(edge_alpha = "Edge Transparency", 
-             width = "Edge Weight",
-             fill = "Phylum") +  # Renames legend titles properly
+    labs(fill = "Phylum") +  # Renames legend titles properly
         guides(
-            edge_alpha = guide_legend(title = "Edge Alpha"),
-            edge_width = guide_legend(title = "Weight"),
+          edge_alpha = "none",
+          edge_width = "none",
             fill = guide_legend(title = "Phylum")
         ) +
     theme_void() +
@@ -269,40 +262,66 @@ We do a little investigation to choose the edge threshold.
 
 ```{r}
 # Extract edge weights from all three networks
-edge_weights_never = E(never.glasso)$weight
-edge_weights_recent = E(recent.glasso)$weight
-edge_weights_past = E(past.glasso)$weight
+edge_weights_never = E(never.glasso)$abs_weight
+edge_weights_recent = E(recent.glasso)$abs_weight
+edge_weights_past = E(past.glasso)$abs_weight
 
-# Combine all edge weights into one vector
-all_edge_weights = c(edge_weights_never, edge_weights_recent, edge_weights_past)
+# df for edge weights
+#all_edge_weights = c(edge_weights_never, edge_weights_recent, edge_weights_past)
 
-edge_weights_df = data.frame(weight = all_edge_weights)
-
-ggplot(edge_weights_df, aes(x = weight)) +
-    geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) +
-    geom_vline(xintercept = quantile(all_edge_weights, c(0.75, 0.9, 0.95)), 
-               linetype = "dashed", color = "red") +
-    theme_minimal() +
-    labs(title = "Combined Edge Weight Distribution", x = "Edge Weight", y = "Count")
+edge_weights_never_df = data.frame(weight = edge_weights_never)
+edge_weights_recent_df = data.frame(weight = edge_weights_recent)
+edge_weights_past_df = data.frame(weight = edge_weights_past)
 ```
 
 ```{r}
-# print the quantile of edge weights
-quantile(all_edge_weights, c(0.75, 0.8, 0.85, 0.9))
+# plot the distribution of edge weights for never fumigated samples
+ggplot(edge_weights_never_df, aes(x = weight)) +
+    geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) +
+    geom_vline(xintercept = quantile(edge_weights_never_df$weight, c(0.75, 0.9, 0.95)), 
+               linetype = "dashed", color = "red") +
+    theme_minimal() +
+    labs(title = "Edge Weight Distribution for Never Fumigated Samples", x = "Edge Weight", y = "Count")
 ```
+
+```{r}
+# plot the distribution of edge weights for recent fumigated samples
+ggplot(edge_weights_recent_df, aes(x = weight)) +
+    geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) +
+    geom_vline(xintercept = quantile(edge_weights_recent_df$weight, c(0.75, 0.9, 0.95)), 
+               linetype = "dashed", color = "red") +
+    theme_minimal() +
+    labs(title = "Edge Weight Distribution for Recent Fumigated Samples", x = "Edge Weight", y = "Count")
+```
+
+```{r}
+# plot the distribution of edge weights for past fumigated samples
+ggplot(edge_weights_past_df, aes(x = weight)) +
+    geom_histogram(bins = 50, fill = "steelblue", alpha = 0.7) +
+    geom_vline(xintercept = quantile(edge_weights_past_df$weight, c(0.75, 0.9, 0.95)), 
+               linetype = "dashed", color = "red") +
+    theme_minimal() +
+    labs(title = "Edge Weight Distribution for Past Fumigated Samples", x = "Edge Weight", y = "Count")
+```
+
+We choose the threshold for each fumigation time.
 
 We choose 0.9 quantile as the edge threshold.
 
 ```{r}
-egde_threshold_global = quantile(all_edge_weights, 0.9)
-print(paste("The global edge threshold is", egde_threshold_global))
+egde_threshold_never = quantile(edge_weights_never_df$weight, 0.9)
+egde_threshold_recent = quantile(edge_weights_recent_df$weight, 0.9)
+egde_threshold_past = quantile(edge_weights_past_df$weight, 0.9)
+print(paste("The edge threshold for never fumigated samples is", egde_threshold_never))
+print(paste("The edge threshold for recent fumigated samples is", egde_threshold_recent))
+print(paste("The edge threshold for past fumigated samples is", egde_threshold_past))
 ```
 
 ```{r}
 # plot the network for glasso
 
 #never
-plot.never.glasso = plot_circular_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
+plot.never.glasso = plot_circular_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_never)
 plot.never.glasso
 
 ggsave("plot_circular/fungi/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
@@ -311,7 +330,7 @@ ggsave("plot_circular/fungi/never_glasso.pdf", plot.never.glasso, width = 12, he
 
 ```{r}
 # recent
-plot.recent.glasso = plot_circular_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
+plot.recent.glasso = plot_circular_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_recent)
 plot.recent.glasso
 
 ggsave("plot_circular/fungi/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
@@ -320,7 +339,7 @@ ggsave("plot_circular/fungi/recent_glasso.pdf", plot.recent.glasso, width = 12, 
 
 ```{r}
 # past
-plot.past.glasso = plot_circular_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", phylum_mapping, 99, edge_threshold = egde_threshold_global)
+plot.past.glasso = plot_circular_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_past)
 plot.past.glasso
 
 ggsave("plot_circular/fungi/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
@@ -374,8 +393,8 @@ create_triple_venn = function(net1, net2, net3, names) {
     fill = c("#1B9E77", "#D95F02", "#7570B3"),
     alpha = 0.5,
     lty = "solid",
-    cex = 1.5,
-    cat.cex = 1.2,
+    cex = 3.5,
+    cat.cex = 2.4,
     cat.dist = 0.05,
     cat.pos = c(0, 0, 180)
   )
@@ -457,41 +476,39 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   # filter out edges with weight less than edge_threshold
   #common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
 
-  # calculate the number of unique phylums
-  unique_phylums_num = length(unique(V(common_graph)$phylum))
-  phylum_colors = pal_npg("nrc")(unique_phylums_num)
+  phylum_colors = pal_npg("nrc")(10)
   #phylum_colors = colorRampPalette(base_colors)(10)
 
 
-  #Assign edge colors by blending both connected node colors
-  E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
-    edge_ends = ends(common_graph, i)
-    node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
-    node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
+  # #Assign edge colors by blending both connected node colors
+  # E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
+  #   edge_ends = ends(common_graph, i)
+  #   node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
+  #   node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
 
-    # Get phylum color indices
-    index1 = match(node1_phylum, unique(V(common_graph)$phylum))
-    index2 = match(node2_phylum, unique(V(common_graph)$phylum))
+  #   # Get phylum color indices
+  #   index1 = match(node1_phylum, unique(V(common_graph)$phylum))
+  #   index2 = match(node2_phylum, unique(V(common_graph)$phylum))
 
-    # Handle missing indices
-    if (is.na(index1)) index1 = 1
-    if (is.na(index2)) index2 = 1
+  #   # Handle missing indices
+  #   if (is.na(index1)) index1 = 1
+  #   if (is.na(index2)) index2 = 1
 
-    # Get colors for both nodes
-    color1 = col2rgb(phylum_colors[index1])
-    color2 = col2rgb(phylum_colors[index2])
+  #   # Get colors for both nodes
+  #   color1 = col2rgb(phylum_colors[index1])
+  #   color2 = col2rgb(phylum_colors[index2])
     
-    # Compute blended color
-    avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-                    (color1[2] + color2[2]) / 2 / 255, 
-                    (color1[3] + color2[3]) / 2 / 255)
+  #   # Compute blended color
+  #   avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
+  #                   (color1[2] + color2[2]) / 2 / 255, 
+  #                   (color1[3] + color2[3]) / 2 / 255)
     
-    return(avg_color)
-  })
+  #   return(avg_color)
+  # })
   #E(common_graph)$edge_alpha = scales::rescale(E(common_graph)$weight, to = c(0.3, 0.8))
   # Create the plot
   network_plot = ggraph(common_graph, layout = "circle") +
-    geom_edge_link0(aes(color = edge_color)) +
+    geom_edge_link0(aes(color = "#FDAE61")) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
     geom_node_text(aes(label = name, size = 5, x = 1.1*x, y = 1.1*y, repel = TRUE), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
@@ -501,12 +518,11 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
     #scale_edge_alpha(range = c(0.3, 0.8)) +
     scale_edge_color_identity() +
     scale_fill_manual(values = phylum_colors, name = "Phylum") +
-    labs(edge_alpha = "Edge Transparency", 
-             width = "Edge Weight",
-             fill = "Phylum") +  # Renames legend titles properly
+    labs(
+        fill = "Phylum") +  # Renames legend titles properly
     guides(
-        edge_alpha = guide_legend(title = "Edge Alpha"),
-        edge_width = guide_legend(title = "Weight"),
+        edge_alpha = "none",
+        edge_width = "none",
         fill = guide_legend(title = "Phylum")
     ) +
     theme_graph() +
@@ -526,7 +542,7 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
 #Now use the function for each fumigation condition
 never_common_result = plot_common_edges_network(
   never.glasso, recent.glasso, past.glasso,
-  "Common Edges Across All Three Glasso Networks",
+  "Subnetwork Shared Among All Three Fumigation Status",
   phylum_mapping
 )
 
@@ -545,7 +561,7 @@ Now, unique edges in each network.
 
 ```{r}
 # Optimized function to create and plot networks with edges unique to each method
-plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10, edge_threshold = 0.07) {
+plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
   edges2 = get.edgelist(net2)
@@ -570,6 +586,11 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
   edges1_df$weight = E(net1)$weight
   edges2_df$weight = E(net2)$weight
   edges3_df$weight = E(net3)$weight
+
+  # add absolute weight
+  edges1_df$abs_weight = abs(edges1_df$weight)
+  edges2_df$abs_weight = abs(edges2_df$weight)
+  edges3_df$abs_weight = abs(edges3_df$weight)
   
   # Find edges unique to each network
   unique_edges1 = setdiff(edges1_df$edge_id, union(edges2_df$edge_id, edges3_df$edge_id))
@@ -608,7 +629,9 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     unique_edges_df = edges_df[edges_df$edge_id %in% unique_edges, ]
     
     # Filter by weight threshold
-    unique_edges_df = unique_edges_df[unique_edges_df$weight > edge_threshold, ]
+    # dynamic edge threshold
+    edge_threshold = quantile(unique_edges_df$abs_weight, 0.9)
+    unique_edges_df = unique_edges_df[unique_edges_df$abs_weight > edge_threshold, ]
     
     # Skip if no edges after filtering
     if (nrow(unique_edges_df) == 0) {
@@ -644,38 +667,15 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     unique_networks[[i]] = unique_graph
 
     unique_phylums_num = length(unique(V(unique_graph)$phylum))
-    phylum_colors = pal_npg("nrc")(unique_phylums_num)
-    # Assign edge colors by blending node phylum colors
-    E(unique_graph)$edge_color = sapply(1:ecount(unique_graph), function(k) {
-      edge_ends = ends(unique_graph, k, names = TRUE)
-      
-      node1_phylum = V(unique_graph)$phylum[match(edge_ends[1], V(unique_graph)$name)]
-      node2_phylum = V(unique_graph)$phylum[match(edge_ends[2], V(unique_graph)$name)]
-      
-      # Handle missing values
-      if (is.na(node1_phylum)) node1_phylum = "Unknown_Phylum"
-      if (is.na(node2_phylum)) node2_phylum = "Unknown_Phylum"
-      
-      # Get phylum color indices
-      index1 = match(node1_phylum, unique(V(unique_graph)$phylum))
-      index2 = match(node2_phylum, unique(V(unique_graph)$phylum))
-      
-      # Handle missing indices
-      if (is.na(index1)) index1 = 1
-      if (is.na(index2)) index2 = 1
-      
-      # Get colors of both nodes
-      color1 = col2rgb(phylum_colors[index1])
-      color2 = col2rgb(phylum_colors[index2])
-      
-      # Compute average color
-      avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-                      (color1[2] + color2[2]) / 2 / 255, 
-                      (color1[3] + color2[3]) / 2 / 255)
-      
-      return(avg_color)
-    })
-
+    if (unique_phylums_num > 10) {
+      base_colors = pal_npg("nrc")(10)
+      phylum_colors = colorRampPalette(base_colors)(unique_phylums_num)
+    } else {
+      phylum_colors = pal_npg("nrc")(unique_phylums_num)
+    }
+    # Assign edge colors
+    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#D73027", "#4575B4")
+   
     E(unique_graph)$edge_alpha = scales::rescale(E(unique_graph)$weight, to = c(0.3, 0.8))
     
     # Create the plot
@@ -689,16 +689,15 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
                     family = "serif", repel = TRUE, show.legend = FALSE) +
       #scale_size(range = c(2, 5)) +
       scale_fill_manual(values = phylum_colors, name = "Phylum") +
-      labs(edge_alpha = "Edge Transparency", 
-           width = "Edge Weight",
+      labs(
            fill = "Phylum") +  
       guides(
-        edge_alpha = guide_legend(title = "Edge Transparency"),
-        edge_width = guide_legend(title = "Weight"),
+        edge_alpha = "none",
+        edge_width = "none",
         fill = guide_legend(title = "Phylum")
       ) +
       theme_graph() +
-      ggtitle(paste0("Edges Unique to ", method_names[i])) +
+      ggtitle(paste0("Subnetwork Specific to ", method_names[i], " Fumigation Status")) +
       theme(
         plot.title = element_text(size = 16, hjust = 0.5),
         legend.position = "right",
@@ -1060,6 +1059,7 @@ response10.horse = horseshoe(response10)
 ```{r}
 # save plot
 fungi_top10_plot = custom_plot_carlasso(response10.horse, text_size = 4, repel = TRUE)
+fungi_top10_plot
 
 ggsave("plot_circular/fungi/fungi_top10_plot.pdf", fungi_top10_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
