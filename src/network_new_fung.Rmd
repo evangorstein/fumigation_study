@@ -209,6 +209,70 @@ Plot the network for Glasso method
 Here is the function to create a plot.
 
 ```{r}
+grouped_circle_layout = function(graph,
+                                  group.attr = "phylum",
+                                  radius = 1,
+                                  start_angle = 0) {
+  #graph df
+  vdf = as_data_frame(graph, what = "vertices")
+  # vertex original index
+  vdf$orig_idx = seq_len(nrow(vdf))
+  
+  # vertex group
+  vdf$group = vdf[[group.attr]]
+  groups = unique(vdf$group)
+  
+  # group size
+  group_sizes = table(vdf$group)
+  total_nodes = sum(group_sizes)
+  
+  # matrix to store (x,y)
+  coords = matrix(NA_real_, nrow = nrow(vdf), ncol = 2,
+                   dimnames = list(NULL, c("x", "y")))
+  
+  # keep track of where the next group's arc should begin
+  current_angle = start_angle
+  
+  # loop over each group and assign it a proportional arc of the circle
+  for (g in groups) {
+    # indices for nodes of this group
+    idx = which(vdf$group == g)
+    k   = length(idx)
+    
+    # fraction of the total circle used by this group
+    frac     = k / total_nodes
+    arc_len  = 2 * pi * frac
+    arc_start = current_angle
+    arc_end   = arc_start + arc_len
+    
+    # evenly distribute this group's k nodes along [arc_start, arc_end]
+    if (k == 1) {
+      # if only one node in this group, place it at the midpoint of the arc
+      angles = (arc_start + arc_end)/2
+    } else {
+      angles = seq(arc_start, arc_end, length.out = k + 2)
+      # drop the first and last angle so nodes don't crowd the boundaries
+      angles = angles[-c(1, length(angles))]
+    }
+    
+    # convert polar -> cartesian
+    coords[idx, "x"] = radius * cos(angles)
+    coords[idx, "y"] = radius * sin(angles)
+    
+    # update for the next group
+    current_angle = arc_end
+  }
+  
+  # create a data frame (x,y) in the correct vertex order
+  layout_df = data.frame(x=coords[, "x"], 
+                          y=coords[, "y"],
+                          orig_idx=vdf$orig_idx)
+  layout_df = layout_df[order(layout_df$orig_idx), ]
+  layout_df$orig_idx = NULL
+
+  return(layout_df)
+}
+
 # # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
 plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 3, edge_threshold = 0.07){
   # filter out edges
@@ -221,15 +285,26 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
     V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] = "Unknown_Phylum"
 
     # order nodes by phylum
-    V(net_filtered)$phylum = factor(V(net_filtered)$phylum, levels = sort(unique(V(net_filtered)$phylum)))
-    net_filtered = permute(net_filtered, order(V(net_filtered)$phylum))
+    # phylum_order = order(V(net_filtered)$phylum)
+    # net_filtered = permute(net_filtered, phylum_order)
+    # layout_coords = igraph::layout_in_circle(net_filtered)
 
-    # add edge color
-    E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#D73027", "#4575B4") 
+    # layout_df = as.data.frame(layout_coords)
+    # colnames(layout_df) = c("x", "y")
+    # layout_df$name = V(net_filtered)$name
+    
+
+    # add edge color with more contrasting colors
+    # Light silver-gray for positive (#E0E0E0), darker tan/sand for negative (#D2B48C)
+    E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#E0E0E0", "#D2B48C") 
     # assign edge alpha
     E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
 
-    layout_data = create_layout(net_filtered, layout = "circle")
+    # print number of positive and negative edges
+    print(paste("Number of positive edges:", sum(E(net_filtered)$weight >= 0)))
+    print(paste("Number of negative edges:", sum(E(net_filtered)$weight < 0)))
+    layout_df = grouped_circle_layout(net_filtered, group.attr = "phylum")
+    layout_data = create_layout(net_filtered, layout = "manual", x = layout_df$x, y = layout_df$y)
 
     network = ggraph(layout_data) +
     geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
@@ -309,9 +384,9 @@ We choose the threshold for each fumigation time.
 We choose 0.9 quantile as the edge threshold.
 
 ```{r}
-egde_threshold_never = quantile(edge_weights_never_df$weight, 0.9)
-egde_threshold_recent = quantile(edge_weights_recent_df$weight, 0.9)
-egde_threshold_past = quantile(edge_weights_past_df$weight, 0.9)
+egde_threshold_never = quantile(edge_weights_never_df$weight, 0.99)
+egde_threshold_recent = quantile(edge_weights_recent_df$weight, 0.99)
+egde_threshold_past = quantile(edge_weights_past_df$weight, 0.99)
 print(paste("The edge threshold for never fumigated samples is", egde_threshold_never))
 print(paste("The edge threshold for recent fumigated samples is", egde_threshold_recent))
 print(paste("The edge threshold for past fumigated samples is", egde_threshold_past))
@@ -427,7 +502,6 @@ dev.off()
 Draw the network for edges in all 3 networks
 
 ```{r}
-# Function to create and plot a network with edges common to all three networks
 plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, node_size = 10, edge_threshold = 0.07) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
@@ -507,10 +581,12 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   # })
   #E(common_graph)$edge_alpha = scales::rescale(E(common_graph)$weight, to = c(0.3, 0.8))
   # Create the plot
-  network_plot = ggraph(common_graph, layout = "circle") +
+  layout_df = grouped_circle_layout(common_graph, group.attr = "phylum")
+  layout_data = create_layout(common_graph, layout = "manual", x = layout_df$x, y = layout_df$y)
+  network_plot = ggraph(layout_data) +
     geom_edge_link0(aes(color = "#FDAE61")) +
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-    geom_node_text(aes(label = name, size = 5, x = 1.1*x, y = 1.1*y, repel = TRUE), 
+    geom_node_text(aes(label = name, size = 4, x = 1.2*x, y = 1.2*y), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
     #scale_size(range = c(2, 5)) +
     #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
@@ -674,18 +750,25 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
       phylum_colors = pal_npg("nrc")(unique_phylums_num)
     }
     # Assign edge colors
-    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#D73027", "#4575B4")
+    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#E0E0E0", "#D2B48C")
+
+    # print number of positive and negative edges
+    print(paste("Number of positive edges:", sum(E(unique_graph)$weight > 0)))
+    print(paste("Number of negative edges:", sum(E(unique_graph)$weight < 0)))
    
     E(unique_graph)$edge_alpha = scales::rescale(E(unique_graph)$weight, to = c(0.3, 0.8))
+
+    layout_df = grouped_circle_layout(unique_graph, group.attr = "phylum")
+    layout_data = create_layout(unique_graph, layout = "manual", x = layout_df$x, y = layout_df$y)
     
     # Create the plot
-    network_plot = ggraph(unique_graph, layout = "circle") +
+    network_plot = ggraph(layout_data) +
       geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
       scale_edge_width(range = c(0.2, 3)) +
       scale_edge_alpha(range = c(0.3, 0.8)) +
       scale_edge_color_identity() +
       geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-      geom_node_text(aes(label = name, size = 4, x = 1.1*x, y = 1.1*y, repel = TRUE), 
+      geom_node_text(aes(label = name, size = 3, x = 1.2*x, y = 1.2*y), 
                     family = "serif", repel = TRUE, show.legend = FALSE) +
       #scale_size(range = c(2, 5)) +
       scale_fill_manual(values = phylum_colors, name = "Phylum") +
