@@ -73,6 +73,38 @@ phylum_mapping = bac_abundance %>%
   {setNames(.$Phylum, .$Family)}
 ```
 
+# Function to create consistent phylum colors
+```{r}
+# Create a function to generate consistent phylum colors
+get_phylum_colors = function(phylum_mapping) {
+  # Get all unique phyla
+  all_phyla = unique(phylum_mapping)
+  all_phyla = all_phyla[!is.na(all_phyla)]
+  all_phyla = c(all_phyla, "Unknown_Phylum")
+  
+  # for base color, use npg palette
+  base_colors = pal_npg("nrc")(10)
+  
+  # if color is more than 10, use colorRampPalette to generate more colors
+  n_phyla = length(all_phyla)
+  phylum_colors = if(n_phyla > 10) {
+    colorRampPalette(base_colors)(n_phyla)
+  } else {
+    base_colors[1:n_phyla]
+  }
+  
+  # make this mapping
+  names(phylum_colors) = all_phyla
+  
+  return(phylum_colors)
+}
+```
+
+```{r}
+# Generate the global phylum color palette once
+global_phylum_colors = get_phylum_colors(phylum_mapping)
+```
+
 ```{r}
 # add sample number to metadata for each samples.
 samp_metadata = samp_metadata %>%
@@ -209,101 +241,6 @@ Plot the network for Glasso method
 Here is the function to create a plot.
 
 ```{r}
-# # Helper function to compute a "clock" layout
-# custom_clock_layout <- function(net, group_attr = "phylum", radius = 1, start_angle = 0) {
-#   # Extract vertex data from the graph
-#   v_df <- as_data_frame(net, what = "vertices")
-#   v_names <- v_df$name
-  
-#   # Get unique groups (phylum) in sorted order; you can change this order if needed
-#   groups <- sort(unique(v_df[[group_attr]]))
-#   n_groups <- length(groups)
-  
-#   # Initialize a matrix to store coordinates for each vertex
-#   coords <- matrix(NA, nrow = vcount(net), ncol = 2)
-  
-#   # For each group, assign an arc (clock segment)
-#   for (i in seq_along(groups)) {
-#     group <- groups[i]
-#     # Find indices of vertices in this group
-#     indices <- which(v_df[[group_attr]] == group)
-#     k <- length(indices)
-    
-#     # Define the segment boundaries (in radians)
-#     seg_start <- start_angle + (i - 1) * (2 * pi / n_groups)
-#     seg_end   <- start_angle + i * (2 * pi / n_groups)
-    
-#     # Evenly distribute nodes along the arc
-#     angles <- if (k == 1) {
-#       (seg_start + seg_end) / 2
-#     } else {
-#       seq(seg_start, seg_end, length.out = k + 2)[-c(1, k + 2)]
-#     }
-    
-#     # Assign coordinates using polar-to-cartesian conversion
-#     coords[indices, 1] <- radius * cos(angles)
-#     coords[indices, 2] <- radius * sin(angles)
-#   }
-  
-#   # Create a layout data frame with computed coordinates and vertex names
-#   layout_df <- data.frame(name = v_names, x = coords[, 1], y = coords[, 2])
-#   # Merge the computed coordinates with the vertex attributes
-#   layout_df <- merge(layout_df, v_df, by = "name", sort = FALSE)
-  
-#   return(layout_df)
-# }
-
-# # Modified plotting function using the custom clock layout
-# plot_circular_network <- function(net, title, phylum_mapping, degree_filter, 
-#                                   node_size = 3, edge_threshold = 0.07, radius = 1) {
-#   # Remove weak edges based on the provided threshold
-#   net_filtered <- delete_edges(net, which(E(net)$abs_weight <= edge_threshold))
-  
-#   # Ensure that each vertex has a 'size' attribute (here using degree)
-#   V(net_filtered)$size <- degree(net_filtered)
-  
-#   # Set up colors for up to 27 phyla
-#   base_colors <- pal_npg("nrc")(10)
-#   phylum_colors <- colorRampPalette(base_colors)(27)
-  
-#   # Add phylum information to each vertex (using your mapping)
-#   V(net_filtered)$phylum <- phylum_mapping[V(net_filtered)$name]
-#   V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] <- "Unknown_Phylum"
-  
-#   # Compute the manual "clock" layout (each phylum gets its clock segment)
-#   layout_df <- custom_clock_layout(net_filtered, group_attr = "phylum", radius = radius)
-  
-#   # Set edge color based on the sign of the weight and scale alpha by absolute weight
-#   E(net_filtered)$edge_color <- ifelse(E(net_filtered)$weight >= 0, "#D73027", "#4575B4")
-#   E(net_filtered)$edge_alpha <- scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
-  
-#   # Build the plot using the manual layout
-#   network <- ggraph(net_filtered, layout = "manual", node.positions = layout_df) +
-#     geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
-#     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-#     geom_node_text(aes(filter = size > degree_filter, label = name), 
-#                    family = "serif", repel = TRUE, show.legend = FALSE) +
-#     scale_edge_width(range = c(0.5, 2.5)) +
-#     scale_edge_alpha(range = c(0.3, 0.8)) +
-#     scale_edge_color_identity() +
-#     scale_fill_manual(values = phylum_colors, name = "Phylum") +
-#     labs(fill = "Phylum", title = title) +
-#     guides(
-#       edge_alpha = "none",
-#       edge_width = "none",
-#       fill = guide_legend(title = "Phylum")
-#     ) +
-#     theme_void() +
-#     theme(
-#       legend.position = "right",
-#       plot.background = element_rect(fill = "white", color = NA),
-#       legend.text = element_text(size = 10, family = "Times New Roman"),
-#       legend.title = element_text(size = 12, family = "Times New Roman", face = "bold"),
-#       plot.title = element_text(hjust = 0.5)
-#     )
-  
-#   return(network)
-# }
 grouped_circle_layout = function(graph,
                                   group.attr = "phylum",
                                   radius = 1,
@@ -372,29 +309,20 @@ grouped_circle_layout = function(graph,
 
 ```{r}
 # # net: net object, title: title of plot, filter: filter out nodes with degree less than filter
-plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_size = 3, edge_threshold = 0.07){
+plot_circular_network = function(net, title, phylum_mapping, degree_filter, node_size = 3, edge_threshold = 0.07){
   # filter out edges
     net_filtered = delete_edges(net, which(E(net)$abs_weight <= edge_threshold))
-    base_colors = pal_npg("nrc")(10)
-    phylum_colors = colorRampPalette(base_colors)(27)  # Repeat for 27 phyla
+    
+    # Use global phylum colors
+    # phylum_colors = get_phylum_colors(phylum_mapping)
 
     # add phylum information to nodes
     V(net_filtered)$phylum = phylum_mapping[V(net_filtered)$name]
     V(net_filtered)$phylum[is.na(V(net_filtered)$phylum)] = "Unknown_Phylum"
 
-    # order nodes by phylum
-    # phylum_order = order(V(net_filtered)$phylum)
-    # net_filtered = permute(net_filtered, phylum_order)
-    # layout_coords = igraph::layout_in_circle(net_filtered)
-
-    # layout_df = as.data.frame(layout_coords)
-    # colnames(layout_df) = c("x", "y")
-    # layout_df$name = V(net_filtered)$name
-    
-
     # add edge color with more contrasting colors
     # Light silver-gray for positive (#E0E0E0), darker tan/sand for negative (#D2B48C)
-    E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#E0E0E0", "#D2B48C") 
+    E(net_filtered)$edge_color = ifelse(E(net_filtered)$weight >= 0, "#BBBBBB", "#D2B48C") 
     # assign edge alpha
     E(net_filtered)$edge_alpha = scales::rescale(E(net_filtered)$abs_weight, to = c(0.3, 0.8))
 
@@ -411,21 +339,22 @@ plot_circular_network = function(net, title, phylum_mapping,degree_filter, node_
     scale_edge_width(range = c(0.5, 2.5)) +
     scale_edge_alpha(range = c(0.3, 0.8)) +
     scale_edge_color_identity() +
-    #scale_size(range = c(1, 6)) +
-    #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "phylum") +
-    scale_fill_manual(values = phylum_colors, name = "Phylum") +
+    scale_fill_manual(values = global_phylum_colors, name = "Phylum") +
     labs(fill = "Phylum") +  # Renames legend titles properly
         guides(
           edge_alpha = "none",
           edge_width = "none",
-            fill = guide_legend(title = "Phylum")
+            fill = guide_legend(title = "Phylum", ncol = 8)
         ) +
     theme_void() +
     theme(
-      legend.position = "right",
+      legend.position = "bottom",
       plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
-      legend.text = element_text(size = 10, family = "Times New Roman"),
-      legend.title = element_text(size = 12, family = "Times New Roman", face = "bold")
+      legend.text = element_text(size = 7, family = "Times New Roman"),
+      legend.title = element_text(size = 9, family = "Times New Roman", face = "bold"),
+      legend.box = "horizontal",
+      legend.margin = margin(t = 10),
+      legend.key.size = unit(0.8, "lines")
     )
     return(network)
 }
@@ -646,39 +575,9 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
   # Calculate node degree for sizing text
   V(common_graph)$degree = degree(common_graph)
 
-  # filter out edges with weight less than edge_threshold
-  #common_graph = delete_edges(common_graph, which(E(common_graph)$weight <= edge_threshold))
+  # Use global phylum colors directly
+  # phylum_colors = get_phylum_colors(phylum_mapping)
 
-  phylum_colors = pal_npg("nrc")(10)
-  #phylum_colors = colorRampPalette(base_colors)(10)
-
-
-  # #Assign edge colors by blending both connected node colors
-  # E(common_graph)$edge_color = sapply(1:ecount(common_graph), function(i) {
-  #   edge_ends = ends(common_graph, i)
-  #   node1_phylum = V(common_graph)$phylum[match(edge_ends[1], V(common_graph)$name)]
-  #   node2_phylum = V(common_graph)$phylum[match(edge_ends[2], V(common_graph)$name)]
-
-  #   # Get phylum color indices
-  #   index1 = match(node1_phylum, unique(V(common_graph)$phylum))
-  #   index2 = match(node2_phylum, unique(V(common_graph)$phylum))
-
-  #   # Handle missing indices
-  #   if (is.na(index1)) index1 = 1
-  #   if (is.na(index2)) index2 = 1
-
-  #   # Get colors for both nodes
-  #   color1 = col2rgb(phylum_colors[index1])
-  #   color2 = col2rgb(phylum_colors[index2])
-    
-  #   # Compute blended color
-  #   avg_color = rgb((color1[1] + color2[1]) / 2 / 255, 
-  #                   (color1[2] + color2[2]) / 2 / 255, 
-  #                   (color1[3] + color2[3]) / 2 / 255)
-    
-  #   return(avg_color)
-  # })
-  #E(common_graph)$edge_alpha = scales::rescale(E(common_graph)$weight, to = c(0.3, 0.8))
   # Create the plot
   layout_df = grouped_circle_layout(common_graph, group.attr = "phylum")
   layout_data = create_layout(common_graph, layout = "manual", x = layout_df$x, y = layout_df$y)
@@ -687,26 +586,26 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
     geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
     geom_node_text(aes(label = name, size = 4, x = 1.2*x, y = 1.2*y), 
                   family = "serif", repel = TRUE, show.legend = FALSE) +
-    #scale_size(range = c(2, 5)) +
-    #scale_fill_viridis(discrete = TRUE, option = "viridis", name = "Phylum") +
     scale_edge_width(range = c(0.5, 2.5)) +
-    #scale_edge_alpha(range = c(0.3, 0.8)) +
     scale_edge_color_identity() +
-    scale_fill_manual(values = phylum_colors, name = "Phylum") +
+    scale_fill_manual(values = global_phylum_colors, name = "Phylum") +
     labs(
         fill = "Phylum") +  # Renames legend titles properly
     guides(
         edge_alpha = "none",
         edge_width = "none",
-        fill = guide_legend(title = "Phylum")
+        fill = guide_legend(title = "Phylum", ncol = 8)
     ) +
     theme_graph() +
     ggtitle(title) +
     theme(
       plot.title = element_text(size = 18, face = "bold", family = "Times", hjust = 0.5),
-      legend.position = "right",
-      legend.title = element_text(size = 12, face = "bold"),
-      legend.text = element_text(size = 10),
+      legend.position = "bottom",
+      legend.title = element_text(size = 9, face = "bold"),
+      legend.text = element_text(size = 7),
+      legend.box = "horizontal",
+      legend.margin = margin(t = 10),
+      legend.key.size = unit(0.8, "lines"),
       plot.background = element_rect(fill = "white", color = NA)
     )
   return(list(plot = network_plot, graph = common_graph))
@@ -841,15 +740,8 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     # Store the graph
     unique_networks[[i]] = unique_graph
 
-    unique_phylums_num = length(unique(V(unique_graph)$phylum))
-    if (unique_phylums_num > 10) {
-      base_colors = pal_npg("nrc")(10)
-      phylum_colors = colorRampPalette(base_colors)(unique_phylums_num)
-    } else {
-      phylum_colors = pal_npg("nrc")(unique_phylums_num)
-    }
     # Assign edge colors
-    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#E0E0E0", "#D2B48C")
+    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#BBBBBB", "#D2B48C")
 
     # print number of positive and negative edges
     print(paste("Number of positive edges:", sum(E(unique_graph)$weight > 0)))
@@ -869,22 +761,24 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
       geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
       geom_node_text(aes(label = name, size = 3, x = 1.2*x, y = 1.2*y), 
                     family = "serif", repel = TRUE, show.legend = FALSE) +
-      #scale_size(range = c(2, 5)) +
-      scale_fill_manual(values = phylum_colors, name = "Phylum") +
+      scale_fill_manual(values = global_phylum_colors, name = "Phylum") +
       labs(
            fill = "Phylum") +  
       guides(
         edge_alpha = "none",
         edge_width = "none",
-        fill = guide_legend(title = "Phylum")
+        fill = guide_legend(title = "Phylum", ncol = 8)
       ) +
       theme_graph() +
       ggtitle(paste0("Subnetwork Specific to ", method_names[i], " Fumigation Status")) +
       theme(
         plot.title = element_text(size = 16, hjust = 0.5),
-        legend.position = "right",
-        legend.title = element_text(size = 12, face = "bold", family = "Times"),
-        legend.text = element_text(size = 10, family = "Times"),
+        legend.position = "bottom",
+        legend.title = element_text(size = 9, face = "bold", family = "Times"),
+        legend.text = element_text(size = 7, family = "Times"),
+        legend.box = "horizontal",
+        legend.margin = margin(t = 10),
+        legend.key.size = unit(0.8, "lines"),
         plot.background = element_rect(fill = "white", color = NA)
       )
     
