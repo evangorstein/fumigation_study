@@ -342,14 +342,14 @@ plot_circular_network = function(net, title, phylum_mapping, degree_filter, node
         guides(
           edge_alpha = "none",
           edge_width = "none",
-            fill = guide_legend(title = "Phylum", ncol = 8)
+            fill = guide_legend(title = "Phylum", ncol = 5)
         ) +
     theme_void() +
     theme(
       legend.position = "bottom",
       plot.background = element_rect(fill = "white", color = NA),  # White background for the entire plot
-      legend.text = element_text(size = 7, family = "Times New Roman"),
-      legend.title = element_text(size = 9, family = "Times New Roman", face = "bold"),
+      legend.text = element_text(size = 13, family = "Times New Roman"),
+      legend.title = element_text(size = 13, family = "Times New Roman", face = "bold"),
       legend.box = "horizontal",
       legend.margin = margin(t = 10),
       legend.key.size = unit(0.8, "lines")
@@ -424,7 +424,7 @@ print(paste("The edge threshold for past fumigated samples is", egde_threshold_p
 plot.never.glasso = plot_circular_network(never.glasso, "Network for Never Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_never)
 plot.never.glasso
 
-ggsave("plot_circular/fungi/never_glasso.pdf", plot.never.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/fungi/never_glasso.pdf", plot.never.glasso, width = 10, height = 14, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -433,7 +433,7 @@ ggsave("plot_circular/fungi/never_glasso.pdf", plot.never.glasso, width = 12, he
 plot.recent.glasso = plot_circular_network(recent.glasso, "Network for Recent Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_recent)
 plot.recent.glasso
 
-ggsave("plot_circular/fungi/recent_glasso.pdf", plot.recent.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/fungi/recent_glasso.pdf", plot.recent.glasso, width = 10, height = 14, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -442,7 +442,7 @@ ggsave("plot_circular/fungi/recent_glasso.pdf", plot.recent.glasso, width = 12, 
 plot.past.glasso = plot_circular_network(past.glasso, "Network for Past Fumigated Samples Using Glasso", phylum_mapping, 999, edge_threshold = egde_threshold_past)
 plot.past.glasso
 
-ggsave("plot_circular/fungi/past_glasso.pdf", plot.past.glasso, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
+ggsave("plot_circular/fungi/past_glasso.pdf", plot.past.glasso, width = 10, height = 14, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
 
 
@@ -592,15 +592,15 @@ plot_common_edges_network = function(net1, net2, net3, title, phylum_mapping, no
     guides(
         edge_alpha = "none",
         edge_width = "none",
-        fill = guide_legend(title = "Phylum", ncol = 8)
+        fill = guide_legend(title = "Phylum", ncol = 5)
     ) +
     theme_graph() +
     ggtitle(title) +
     theme(
       plot.title = element_text(size = 18, face = "bold", family = "Times", hjust = 0.5),
       legend.position = "bottom",
-      legend.title = element_text(size = 9, face = "bold"),
-      legend.text = element_text(size = 7),
+      legend.title = element_text(size = 13, face = "bold"),
+      legend.text = element_text(size = 13),
       legend.box = "horizontal",
       legend.margin = margin(t = 10),
       legend.key.size = unit(0.8, "lines"),
@@ -624,7 +624,7 @@ never_common_result$plot
 # Save the plot
 ggsave("plot_circular/fungi/never_common_edges.pdf", 
        never_common_result$plot, 
-       width = 12, height = 10, dpi = 600, 
+       width = 10, height = 14, dpi = 600, 
        device = cairo_pdf, bg = "white", limitsize = FALSE)
 
 ```
@@ -632,8 +632,9 @@ ggsave("plot_circular/fungi/never_common_edges.pdf",
 Now, unique edges in each network.
 
 ```{r}
-# Optimized function to create and plot networks with edges unique to each method
-plot_unique_edges_network = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10) {
+# Function for fungal networks with selective node labeling and edge filtering
+plot_fungal_unique_networks = function(net1, net2, net3, method_names, title, phylum_mapping, node_size = 10,
+                                      edge_label_threshold = 0.99, edge_display_threshold = 0.99) {
   # Get edge lists and standardize them
   edges1 = get.edgelist(net1)
   edges2 = get.edgelist(net2)
@@ -700,31 +701,30 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     # Extract edges and weights
     unique_edges_df = edges_df[edges_df$edge_id %in% unique_edges, ]
     
-    # Filter by weight threshold
-    # dynamic edge threshold
-    edge_threshold = quantile(unique_edges_df$abs_weight, 0.9)
-    unique_edges_df = unique_edges_df[unique_edges_df$abs_weight > edge_threshold, ]
+    # Initialize all edges as included (for node identification)
+    all_edges_df = unique_edges_df
     
-    # Skip if no edges after filtering
-    if (nrow(unique_edges_df) == 0) {
-      unique_networks[[i]] = NULL
-      plots[[i]] = NULL
-      next
-    }
+    # Get the weight thresholds for edge display and node labeling
+    display_threshold = quantile(unique_edges_df$abs_weight, edge_display_threshold)
+    label_threshold = quantile(unique_edges_df$abs_weight, edge_label_threshold)
     
-    # Create a new graph with only the unique edges
-    all_nodes = unique(c(unique_edges_df$V1, unique_edges_df$V2))
+    # Create a new graph with only the unique edges but keep all nodes
+    all_nodes = unique(c(all_edges_df$V1, all_edges_df$V2))
     
     # Create an empty graph
     unique_graph = graph.empty(directed = FALSE, n = length(all_nodes))
     V(unique_graph)$name = all_nodes
     
-    # Add the unique edges with weights
-    for (j in 1:nrow(unique_edges_df)) {
+    # Filter edges for display (but keep all nodes)
+    visible_edges_df = unique_edges_df[unique_edges_df$abs_weight > display_threshold, ]
+    
+    # Add the visible edges with weights
+    for (j in 1:nrow(visible_edges_df)) {
       unique_graph = add_edges(
         unique_graph, 
-        c(unique_edges_df$V1[j], unique_edges_df$V2[j]),
-        weight = unique_edges_df$weight[j]
+        c(visible_edges_df$V1[j], visible_edges_df$V2[j]),
+        weight = visible_edges_df$weight[j],
+        abs_weight = visible_edges_df$abs_weight[j]
       )
     }
     
@@ -735,45 +735,71 @@ plot_unique_edges_network = function(net1, net2, net3, method_names, title, phyl
     # Calculate node degree for sizing text
     V(unique_graph)$degree = degree(unique_graph)
     
+    # Identify nodes connected to high-weight edges for labeling
+    nodes_to_label = c()
+    if (ecount(unique_graph) > 0) {  # Check if there are any edges
+      for (e in E(unique_graph)) {
+        if (E(unique_graph)[e]$abs_weight >= label_threshold) {
+          nodes_to_label = c(nodes_to_label, ends(unique_graph, e))
+        }
+      }
+    }
+    nodes_to_label = unique(as.vector(nodes_to_label))
+    
+    # Set the show_label property for each node
+    V(unique_graph)$show_label = V(unique_graph)$name %in% nodes_to_label
+    
     # Store the graph
     unique_networks[[i]] = unique_graph
-
-    # Assign edge colors
-    E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#BBBBBB", "#D2B48C")
-
-    # print number of positive and negative edges
-    print(paste("Number of positive edges:", sum(E(unique_graph)$weight > 0)))
-    print(paste("Number of negative edges:", sum(E(unique_graph)$weight < 0)))
-   
-    E(unique_graph)$edge_alpha = scales::rescale(E(unique_graph)$weight, to = c(0.3, 0.8))
+    
+    # Print summary statistics
+    print(paste("Network for", method_names[i], "fumigation:"))
+    print(paste("Number of nodes:", length(V(unique_graph))))
+    print(paste("Number of nodes with labels:", sum(V(unique_graph)$show_label)))
+    print(paste("Edge display threshold:", display_threshold))
+    print(paste("Edge label threshold:", label_threshold))
+    
+    if (ecount(unique_graph) > 0) {
+      # Assign edge colors
+      E(unique_graph)$edge_color = ifelse(E(unique_graph)$weight > 0, "#BBBBBB", "#D2B48C")
+      
+      print(paste("Number of visible edges:", ecount(unique_graph)))
+      print(paste("Number of positive edges:", sum(E(unique_graph)$weight > 0)))
+      print(paste("Number of negative edges:", sum(E(unique_graph)$weight < 0)))
+      
+      E(unique_graph)$edge_alpha = scales::rescale(abs(E(unique_graph)$weight), to = c(0.3, 0.8))
+    } else {
+      print("No edges meet the display threshold")
+      next
+    }
 
     layout_df = grouped_circle_layout(unique_graph, group.attr = "phylum")
     layout_data = create_layout(unique_graph, layout = "manual", x = layout_df$x, y = layout_df$y)
     
-    # Create the plot
+    # Create the plot - only show labels for nodes connected to edges above threshold
     network_plot = ggraph(layout_data) +
-      geom_edge_link0(aes(width = weight, alpha = edge_alpha, color = edge_color)) +
+      geom_edge_link0(aes(width = abs(weight), alpha = edge_alpha, color = edge_color)) +
       scale_edge_width(range = c(0.2, 3)) +
       scale_edge_alpha(range = c(0.3, 0.8)) +
       scale_edge_color_identity() +
       geom_node_point(aes(fill = phylum), shape = 21, size = node_size, stroke = 0.8) +
-      geom_node_text(aes(label = name, size = 3, x = 1.2*x, y = 1.2*y), 
+      # Only show labels for nodes that meet the criteria
+      geom_node_text(aes(label = ifelse(show_label, name, ""), size = 3, x = 1.2*x, y = 1.2*y), 
                     family = "serif", repel = TRUE, show.legend = FALSE) +
       scale_fill_manual(values = global_phylum_colors, name = "Phylum") +
-      labs(
-           fill = "Phylum") +  
+      labs(fill = "Phylum") +  
       guides(
         edge_alpha = "none",
         edge_width = "none",
-        fill = guide_legend(title = "Phylum", ncol = 8)
+        fill = guide_legend(title = "Phylum", ncol = 5)
       ) +
       theme_graph() +
       ggtitle(paste0("Subnetwork Specific to ", method_names[i], " Fumigation Status")) +
       theme(
-        plot.title = element_text(size = 16, hjust = 0.5),
+        plot.title = element_text(size = 16, hjust = 0.5, family = "Times"),
         legend.position = "bottom",
-        legend.title = element_text(size = 9, face = "bold", family = "Times"),
-        legend.text = element_text(size = 7, family = "Times"),
+        legend.title = element_text(size = 13, face = "bold", family = "Times"),
+        legend.text = element_text(size = 13, family = "Times"),
         legend.box = "horizontal",
         legend.margin = margin(t = 10),
         legend.key.size = unit(0.8, "lines"),
@@ -793,7 +819,7 @@ Plot the unique networks
 
 # Now use the function for each fumigation condition
 # For never fumigated samples
-unique_result = plot_unique_edges_network(
+unique_result = plot_fungal_unique_networks(
   never.glasso, recent.glasso, past.glasso,
   c("Never", "Recent", "Past"),
   "Edges Unique to Each Fumigation Condition",
@@ -809,7 +835,7 @@ for (i in 1:3) {
     method_name = c("Never", "Recent", "Past")[i]
     ggsave(paste0("plot_circular/fungi/never_unique_", method_name, ".pdf"), 
            unique_result$plots[[i]], 
-           width = 12, height = 10, dpi = 600, 
+           width = 10, height = 14, dpi = 600, 
            device = cairo_pdf, bg = "white", limitsize = FALSE)
   }
 }
@@ -822,6 +848,18 @@ Now, Identify Different nodes/taxas in 3 network.
 degree.never = degree(never.glasso)
 degree.recent = degree(recent.glasso)
 degree.past = degree(past.glasso)
+
+# convert weights to shifted positive weights (-min)
+E(never.glasso)$true_weights = E(never.glasso)$weight
+E(recent.glasso)$true_weights = E(recent.glasso)$weight
+E(past.glasso)$true_weights = E(past.glasso)$weight
+```
+
+
+```{r}
+E(never.glasso)$weight = E(never.glasso)$positive_weight
+E(recent.glasso)$weight = E(recent.glasso)$positive_weight
+E(past.glasso)$weight = E(past.glasso)$positive_weight
 
 betweenness.never = betweenness(never.glasso)
 betweenness.recent = betweenness(recent.glasso)
