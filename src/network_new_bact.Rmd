@@ -952,7 +952,7 @@ plot_recent_unique_networks = function(net1, net2, net3, method_names, title, ph
       guides(
         edge_alpha = "none",
         edge_width = "none",
-        fill = guide_legend(title = "Phylum", ncol = 5)
+        fill = guide_legend(title = "Phylum", ncol = 4)
       ) +
       theme_graph() +
       ggtitle(paste0("Subnetwork Specific to ", method_names[i], " Fumigation Status")) +
