@@ -941,6 +941,12 @@ top_20 = difference_df[1:20,]
 
 top_20$names
 ```
+
+Write top 20 to csv
+
+```{r}
+write.csv(top_20, "plot_circular/fungi/top_20.csv")
+```
 Here is the names of the top 20 different nodes.
 
 Now, we fit carlasso model to 20 taxas.
@@ -1198,6 +1204,109 @@ fungi_top10_single_plot
 
 ggsave("plot_circular/fungi/fungi_top10_single_plot.pdf", fungi_top10_single_plot, width = 12, height = 10, dpi = 600, device = cairo_pdf, bg = "white", limitsize = FALSE)
 ```
+
+
+Investigation
+
+
+```{r}
+#never dataframe
+never_mat = genus.mat[never_fumigated,]
+recent_mat = genus.mat[recent_fumigated,]
+past_mat = genus.mat[past_fumigated,]
+
+# d1 = sum(never_mat[,"Diplorickettsiaceae"])
+# d2 = sum(recent_mat[,"Diplorickettsiaceae"])
+# d3 = sum(past_mat[,"Diplorickettsiaceae"])
+```
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+for (name in top_20$names) {
+  d1 = sum(never_mat[,name])
+  d2 = sum(recent_mat[,name])
+  d3 = sum(past_mat[,name])
+  print(paste(name, d1, d2, d3))
+}
+```
+
+
+The top 20's taxa's abundance is different in never, recent, past. (Sum across all samples of corresponding fumigation status)
+
+Within the top 20 taxa, we can classify them into 5 groups:
+1. Continuous decline: Abundance decreases after fumigation and continues to decrease
+2. Decline then strong recovery: Abundance drops after fumigation but recovers to levels higher than pre-fumigation
+3. Decline then partial recovery: Abundance drops after fumigation and shows some recovery but stays below pre-fumigation levels
+4. Continuous increase: Abundance increases after fumigation and continues to increase
+5. Spike then decline: Abundance increases after fumigation but then decreases
+
+```{r}
+# top 20 df with sum of abundance in never, recent, past
+group_df = data.frame(
+  names = top_20$names,
+  d1 = NA,  # never
+  d2 = NA,  # recent
+  d3 = NA,  # past
+  group = NA
+)
+
+# Function to classify abundance patterns
+classify_pattern = function(d1, d2, d3) {
+  if (d2 < d1) {  # Decrease after fumigation
+    if (d3 < d2) {  # Continues to decrease
+      return(1)  # "Continuous decline"
+    } else if (d3 > d2) {  # Shows recovery
+      if (d3 > d1) {
+        return(2)  # "Decline then strong recovery"
+      } else {
+        return(3)  # "Decline then partial recovery"
+      }
+    }
+  } else {  # Increase after fumigation
+    if (d3 > d2) {
+      return(4)  # "Continuous increase"
+    } else {
+      return(5)  # "Spike then decline"
+    }
+  }
+  return(NA)  # For any other patterns
+}
+
+# Calculate abundances and classify patterns
+for (name in top_20$names) {
+  # Calculate mean abundance for each period
+  d1 = sum(never_mat[,name]) / length(never_fumigated)    # never
+  d2 = sum(recent_mat[,name]) / length(recent_fumigated)  # recent
+  d3 = sum(past_mat[,name]) / length(past_fumigated)      # past
+  
+  # Store values
+  group_df[group_df$names == name,]$d1 = d1
+  group_df[group_df$names == name,]$d2 = d2
+  group_df[group_df$names == name,]$d3 = d3
+  
+  # Classify pattern
+  group_df[group_df$names == name,]$group = classify_pattern(d1, d2, d3)
+}
+
+# Add descriptive labels
+group_df$pattern = factor(group_df$group,
+                         levels = 1:5,
+                         labels = c("Continuous decline",
+                                  "Decline then strong recovery",
+                                  "Decline then partial recovery",
+                                  "Continuous increase",
+                                  "Spike then decline"))
+
+# Display results with pattern descriptions
+group_df
+```
+
+Write group_df to csv
+
+```{r}
+write.csv(group_df, "plot_circular/fungi/group_df.csv")
+```
+
 
 
 
