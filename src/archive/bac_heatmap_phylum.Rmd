@@ -147,6 +147,13 @@ samp_annotation = data.frame(`fumigation status` = factor(case_when(
 row.names(samp_annotation) = all_samps
 ```
 
+```{r}
+# count number of samples in each group
+samp_annotation %>% 
+  group_by(`fumigation.status`) %>% 
+  summarise(n = n())
+```
+
 ## Create heatmaps
 
 ```{r}
@@ -173,30 +180,24 @@ create_heatmap = function(df, annotation = NULL,
   return (heatmap)
 }
 
-pdf(here("plots", "bacteria_heatmap1.pdf"))
+pdf(here("plots_revised", "bacteria_heatmap1.pdf"))
 plt1 = create_heatmap(phylum.lr,
                       annotation = samp_annotation,
                       rowname = FALSE, 
-                      title = "Log ratio normalized abundances", 
-                      xlabel = "Samples 1-240", 
                       ylabel = "All 44 bacterial phylums"
 )
 dev.off()
 
-pdf(here("plots", "bacteria_heatmap2.pdf"))
+pdf(here("plots_revised", "bacteria_heatmap2.pdf"))
 plt1.filt = create_heatmap(phylum.lr.filt,
                            annotation = samp_annotation,
-                           title = "Log ratio normalized abundances", 
-                           xlabel = "Samples 1-240", 
                            ylabel = "27 most abundant bacterial phylums"
 )
 dev.off()
 
-pdf(here("plots", "bacteria_heatmap3.pdf"))
+pdf(here("plots_revised", "bacteria_heatmap3.pdf"))
 plt1.harsh = create_heatmap(phylum.lr.harsh,
                             annotation = samp_annotation,
-                            title = "Log ratio normalized abundances", 
-                            xlabel = "Samples 1-240", 
                             ylabel = "14 most abundant bacterial phylums"
 )
 dev.off()
@@ -310,7 +311,7 @@ row.names(samp_annotation_average) = c("never", "recent", "past")
 Plotting the heatmap.
 
 ```{r}
-pdf(here("plots", "bacteria_heatmap1_avg.pdf"))
+pdf(here("plots_revised", "bacteria_heatmap1_avg.pdf"))
 plt2 = create_heatmap(heatmapdata.phylum.lr,
                       annotation = samp_annotation_average,
                       rowname = FALSE, 

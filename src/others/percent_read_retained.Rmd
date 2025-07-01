@@ -28,7 +28,7 @@ Read in the data
 
 ```{r}
 samp_metadata = readRDS(here("data", "clean", "samp_metadata.RDS"))
-bac_abundance = readRDS(here("data", "clean", "bac_abundance.RDS"))
+bac_abundance = readRDS(here("data", "clean", "fung_abundance.RDS"))
 ```
 
 ```{r}
