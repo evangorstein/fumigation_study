@@ -611,7 +611,7 @@ ggsave("plot_high_quality/simpson_treatment_fungi.pdf",
        device = cairo_pdf,
        bg = "white",
        limitsize = FALSE)
-  ```
+```
 
 ```{r}
 # filter out samples that is not fumigated
