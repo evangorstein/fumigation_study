@@ -85,7 +85,7 @@ sample_scores$Time <- factor(sample_scores$Time,
 
 #Plot samples
 samples_plot = ggplot(sample_scores, aes(NMDS1, NMDS2)) +
-  geom_point(aes(color = `fumigation status`, shape = Time)) +
+  geom_point(aes(color = `fumigation status`, shape = Time), size = 4) +
   #scale_color_brewer(palette = "Dark2") +
   scale_color_manual(values = color_coding) +
   ggtitle("Samples") +
@@ -175,7 +175,7 @@ fung_sample_scores$Time <- factor(fung_sample_scores$Time,
 
 #Plot samples
 fung_samples_plot = ggplot(fung_sample_scores, aes(NMDS1, NMDS2)) +
-  geom_point(aes(color = `fumigation status`, shape = Time)) +
+  geom_point(aes(color = `fumigation status`, shape = Time), size = 4) +
   #scale_color_brewer(palette = "Dark2") +
   scale_color_manual(values = color_coding) +
   ggtitle("Samples") +
