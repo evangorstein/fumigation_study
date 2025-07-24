@@ -68,8 +68,7 @@ sample_metadata = samp_metadata %>%
 
 ```{r}
 # Calculate alpha diversity (inverse simpson) for each sample
-alpha_div = diversity(fam.mat, index = "simpson")
-alpha_div = 1/alpha_div
+alpha_div = diversity(fam.mat, index = "invsimpson")
 
 sample_metadata = sample_metadata %>%
   mutate(inv_simpson = alpha_div)
@@ -140,10 +139,13 @@ dunn_test_result
 ```
 
 ```{r}
-# Creating labels for each group
-labels_fumigation_b <- c("never" = "b",  # Base group
-            "past" = "b",   # Not significantly different from base
-            "recent" = "a") # Significantly different from base
+# Creating labels for each group based on Dunn test results
+# never and past: p = 0.201 (not significant) → same letter
+# never and recent: p < 0.001 (significant) → different letters  
+# past and recent: p < 0.001 (significant) → different letters
+labels_fumigation_b <- c("never" = "a",  # Highest diversity
+            "past" = "a",   # Not significantly different from never
+            "recent" = "b") # Significantly lower than both never and past
 
 ```
 
@@ -382,8 +384,7 @@ sample_metadata = samp_metadata %>%
 Calculating the alpha diversity using shannon index
 
 ```{r}
-alpha_div_fungi = diversity(genus.mat, index = "simpson")
-alpha_div_fungi = 1/alpha_div_fungi
+alpha_div_fungi = diversity(genus.mat, index = "invsimpson")
 
 sample_metadata = sample_metadata %>%
   mutate(inv_simpson_fungi = alpha_div_fungi)
@@ -392,14 +393,14 @@ sample_metadata = sample_metadata %>%
 It appears there is a outlier whith high inverse simpson index. We see who this sample is and remove it.
 
 ```{r}
-highest_alpha = sample_metadata %>%
-  filter(inv_simpson_fungi == max(inv_simpson_fungi))
-highest_alpha
+# highest_alpha = sample_metadata %>%
+#   filter(inv_simpson_fungi == max(inv_simpson_fungi))
+# highest_alpha
 ```
 
 ```{r}
-sample_metadata = sample_metadata %>%
-  filter(inv_simpson_fungi != max(inv_simpson_fungi))
+# sample_metadata = sample_metadata %>%
+#   filter(inv_simpson_fungi != max(inv_simpson_fungi))
 ```
 
 
