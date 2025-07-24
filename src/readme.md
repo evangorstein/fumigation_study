@@ -1,8 +1,6 @@
 # Analyses
 <!-- See Notion for more details. -->
 
-All the following analyses are for bacteria.
-
 1. PERMANOVA analysis: See `permanova.Rmd` for both bacteria and fungi.
     - Conclusion: There are significant differences by fumigation but not by treatment
 2. Identify taxa that are different per group: See `bact_heatmap.Rmd` and `fung_heatmap.Rmd` for the heatmap visualization. Also, see `nmds.Rmd` for NMDS analysis for both bacteria and fungi.
